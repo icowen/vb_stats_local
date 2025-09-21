@@ -89,6 +89,18 @@ class DatabaseHelper {
         ''',
       },
       {
+        'name': 'practice_players',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS practice_players(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            practiceId INTEGER,
+            playerId INTEGER,
+            FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
+            FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE
+          )
+        ''',
+      },
+      {
         'name': 'events',
         'create': '''
           CREATE TABLE IF NOT EXISTS events(
@@ -189,6 +201,18 @@ class DatabaseHelper {
         teamId INTEGER,
         date INTEGER,
         FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create practice_players junction table
+    await db.execute('''
+      CREATE TABLE practice_players(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        practiceId INTEGER,
+        playerId INTEGER,
+        FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
+        FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE,
+        UNIQUE(practiceId, playerId)
       )
     ''');
 
@@ -315,6 +339,37 @@ class DatabaseHelper {
       WHERE tp.teamId = ?
     ''',
       [teamId],
+    );
+    return List.generate(maps.length, (i) => Player.fromMap(maps[i]));
+  }
+
+  // Practice-Player relationship operations
+  Future<void> addPlayerToPractice(int practiceId, int playerId) async {
+    final db = await database;
+    await db.insert('practice_players', {
+      'practiceId': practiceId,
+      'playerId': playerId,
+    });
+  }
+
+  Future<void> removePlayerFromPractice(int practiceId, int playerId) async {
+    final db = await database;
+    await db.delete(
+      'practice_players',
+      where: 'practiceId = ? AND playerId = ?',
+      whereArgs: [practiceId, playerId],
+    );
+  }
+
+  Future<List<Player>> getPracticePlayers(int practiceId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
+      SELECT p.* FROM players p
+      INNER JOIN practice_players pp ON p.id = pp.playerId
+      WHERE pp.practiceId = ?
+    ''',
+      [practiceId],
     );
     return List.generate(maps.length, (i) => Player.fromMap(maps[i]));
   }
@@ -594,6 +649,7 @@ class DatabaseHelper {
   Future<void> clearDatabase() async {
     final db = await database;
     await db.delete('events');
+    await db.delete('practice_players');
     await db.delete('practices');
     await db.delete('matches');
     await db.delete('team_players');
