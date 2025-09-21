@@ -4,6 +4,7 @@ import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
 import 'models/practice.dart';
+import 'practice_stats_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -89,7 +90,23 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _initializeDatabase();
+  }
+
+  Future<void> _initializeDatabase() async {
+    try {
+      await _dbHelper.ensureTablesExist();
+      await _loadData();
+    } catch (e) {
+      print('Error initializing database: $e');
+      setState(() {
+        _players = [];
+        _teams = [];
+        _matches = [];
+        _practices = [];
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -420,6 +437,19 @@ class _MyHomePageState extends State<MyHomePage> {
                         title: Text(practice.practiceTitle),
                         subtitle: Text(
                           '${practice.date.day}/${practice.date.month}/${practice.date.year}',
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  PracticeStatsPage(practice: practice),
+                            ),
+                          );
+                        },
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 16,
+                          color: Colors.grey,
                         ),
                       ),
                     );
@@ -815,9 +845,24 @@ class _MyHomePageState extends State<MyHomePage> {
                         team: selectedTeam!,
                         date: selectedDate,
                       );
-                      await _dbHelper.insertPractice(practice);
+                      final practiceId = await _dbHelper.insertPractice(
+                        practice,
+                      );
                       _loadData();
                       Navigator.of(context).pop();
+
+                      // Navigate to practice stats page
+                      final createdPractice = Practice(
+                        id: practiceId,
+                        team: selectedTeam!,
+                        date: selectedDate,
+                      );
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PracticeStatsPage(practice: createdPractice),
+                        ),
+                      );
                     }
                   },
                   child: const Text('Create'),

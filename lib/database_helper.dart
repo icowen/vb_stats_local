@@ -4,6 +4,7 @@ import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
 import 'models/practice.dart';
+import 'models/event.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -21,6 +22,119 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'vb_stats.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
+  }
+
+  // Check and create tables if they don't exist
+  Future<void> ensureTablesExist() async {
+    final db = await database;
+
+    // List of all required tables with their CREATE statements
+    final tables = [
+      {
+        'name': 'players',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS players(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            firstName TEXT NOT NULL,
+            lastName TEXT NOT NULL,
+            jerseyNumber INTEGER
+          )
+        ''',
+      },
+      {
+        'name': 'teams',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS teams(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            teamName TEXT NOT NULL,
+            clubName TEXT NOT NULL,
+            age INTEGER NOT NULL
+          )
+        ''',
+      },
+      {
+        'name': 'team_players',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS team_players(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            teamId INTEGER,
+            playerId INTEGER,
+            FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE,
+            FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE
+          )
+        ''',
+      },
+      {
+        'name': 'matches',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS matches(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            homeTeamId INTEGER,
+            awayTeamId INTEGER,
+            startTime INTEGER,
+            FOREIGN KEY (homeTeamId) REFERENCES teams (id) ON DELETE CASCADE,
+            FOREIGN KEY (awayTeamId) REFERENCES teams (id) ON DELETE CASCADE
+          )
+        ''',
+      },
+      {
+        'name': 'practices',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS practices(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            teamId INTEGER,
+            date INTEGER,
+            FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
+          )
+        ''',
+      },
+      {
+        'name': 'events',
+        'create': '''
+          CREATE TABLE IF NOT EXISTS events(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            practiceId INTEGER,
+            matchId INTEGER,
+            playerId INTEGER,
+            teamId INTEGER,
+            type TEXT NOT NULL,
+            metadata TEXT,
+            timestamp INTEGER NOT NULL,
+            FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
+            FOREIGN KEY (matchId) REFERENCES matches (id) ON DELETE CASCADE,
+            FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE,
+            FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
+          )
+        ''',
+      },
+    ];
+
+    // Check each table and create if it doesn't exist
+    for (final table in tables) {
+      try {
+        // Try to query the table to see if it exists
+        final result = await db.rawQuery(
+          'SELECT name FROM sqlite_master WHERE type="table" AND name="${table['name']}"',
+        );
+
+        // If the query returns empty, the table doesn't exist
+        if (result.isEmpty) {
+          print('Creating missing table: ${table['name']}');
+          await db.execute(table['create']!);
+        }
+      } catch (e) {
+        // If there's an error checking, try to create the table
+        print(
+          'Error checking table ${table['name']}, attempting to create: $e',
+        );
+        try {
+          await db.execute(table['create']!);
+          print('Successfully created table: ${table['name']}');
+        } catch (createError) {
+          print('Failed to create table ${table['name']}: $createError');
+        }
+      }
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -74,6 +188,24 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         teamId INTEGER,
         date INTEGER,
+        FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create events table
+    await db.execute('''
+      CREATE TABLE events(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        practiceId INTEGER,
+        matchId INTEGER,
+        playerId INTEGER,
+        teamId INTEGER,
+        type TEXT NOT NULL,
+        metadata TEXT,
+        timestamp INTEGER NOT NULL,
+        FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
+        FOREIGN KEY (matchId) REFERENCES matches (id) ON DELETE CASCADE,
+        FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE,
         FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
       )
     ''');
@@ -291,9 +423,177 @@ class DatabaseHelper {
     return await db.delete('practices', where: 'id = ?', whereArgs: [id]);
   }
 
+  // Event CRUD operations
+  Future<int> insertEvent(Event event) async {
+    final db = await database;
+    return await db.insert('events', event.toMap());
+  }
+
+  Future<List<Event>> getAllEvents() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('events');
+    List<Event> events = [];
+    for (var map in maps) {
+      final player = await getPlayer(map['playerId']);
+      final team = await getTeam(map['teamId']);
+      Practice? practice;
+      Match? match;
+
+      if (map['practiceId'] != null) {
+        practice = await getPractice(map['practiceId']);
+      }
+      if (map['matchId'] != null) {
+        match = await getMatch(map['matchId']);
+      }
+
+      if (player != null && team != null) {
+        events.add(
+          Event.fromMap(
+            map,
+            player: player,
+            team: team,
+            practice: practice,
+            match: match,
+          ),
+        );
+      }
+    }
+    return events;
+  }
+
+  Future<List<Event>> getEventsForPractice(int practiceId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'events',
+      where: 'practiceId = ?',
+      whereArgs: [practiceId],
+    );
+    List<Event> events = [];
+    for (var map in maps) {
+      final player = await getPlayer(map['playerId']);
+      final team = await getTeam(map['teamId']);
+      final practice = await getPractice(practiceId);
+
+      if (player != null && team != null && practice != null) {
+        events.add(
+          Event.fromMap(map, player: player, team: team, practice: practice),
+        );
+      }
+    }
+    return events;
+  }
+
+  Future<List<Event>> getEventsForMatch(int matchId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'events',
+      where: 'matchId = ?',
+      whereArgs: [matchId],
+    );
+    List<Event> events = [];
+    for (var map in maps) {
+      final player = await getPlayer(map['playerId']);
+      final team = await getTeam(map['teamId']);
+      final match = await getMatch(matchId);
+
+      if (player != null && team != null && match != null) {
+        events.add(
+          Event.fromMap(map, player: player, team: team, match: match),
+        );
+      }
+    }
+    return events;
+  }
+
+  Future<List<Event>> getEventsForPlayer(int playerId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'events',
+      where: 'playerId = ?',
+      whereArgs: [playerId],
+    );
+    List<Event> events = [];
+    for (var map in maps) {
+      final player = await getPlayer(playerId);
+      final team = await getTeam(map['teamId']);
+      Practice? practice;
+      Match? match;
+
+      if (map['practiceId'] != null) {
+        practice = await getPractice(map['practiceId']);
+      }
+      if (map['matchId'] != null) {
+        match = await getMatch(map['matchId']);
+      }
+
+      if (player != null && team != null) {
+        events.add(
+          Event.fromMap(
+            map,
+            player: player,
+            team: team,
+            practice: practice,
+            match: match,
+          ),
+        );
+      }
+    }
+    return events;
+  }
+
+  Future<Event?> getEvent(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'events',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      final map = maps.first;
+      final player = await getPlayer(map['playerId']);
+      final team = await getTeam(map['teamId']);
+      Practice? practice;
+      Match? match;
+
+      if (map['practiceId'] != null) {
+        practice = await getPractice(map['practiceId']);
+      }
+      if (map['matchId'] != null) {
+        match = await getMatch(map['matchId']);
+      }
+
+      if (player != null && team != null) {
+        return Event.fromMap(
+          map,
+          player: player,
+          team: team,
+          practice: practice,
+          match: match,
+        );
+      }
+    }
+    return null;
+  }
+
+  Future<int> updateEvent(Event event) async {
+    final db = await database;
+    return await db.update(
+      'events',
+      event.toMap(),
+      where: 'id = ?',
+      whereArgs: [event.id],
+    );
+  }
+
+  Future<int> deleteEvent(int id) async {
+    final db = await database;
+    return await db.delete('events', where: 'id = ?', whereArgs: [id]);
+  }
+
   // Clear all data from database
   Future<void> clearDatabase() async {
     final db = await database;
+    await db.delete('events');
     await db.delete('practices');
     await db.delete('matches');
     await db.delete('team_players');
