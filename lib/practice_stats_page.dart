@@ -4,6 +4,7 @@ import 'models/player.dart';
 import 'models/event.dart';
 import 'models/team.dart';
 import 'database_helper.dart';
+import 'team_stats_page.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -381,20 +382,10 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
   }
 
   void _showTeamStats() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Team Stats'),
-          content: const Text('Team statistics will be displayed here.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TeamStatsPage(practice: widget.practice),
+      ),
     );
   }
 
