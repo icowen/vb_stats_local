@@ -3,6 +3,7 @@ import 'database_helper.dart';
 import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
+import 'models/practice.dart';
 
 void main() {
   runApp(const MyApp());
@@ -81,7 +82,9 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Player> _players = [];
   List<Team> _teams = [];
   List<Match> _matches = [];
+  List<Practice> _practices = [];
   bool _isLoading = true;
+  String? _expandedTile;
 
   @override
   void initState() {
@@ -97,11 +100,13 @@ class _MyHomePageState extends State<MyHomePage> {
       final players = await _dbHelper.getAllPlayers();
       final teams = await _dbHelper.getAllTeams();
       final matches = await _dbHelper.getAllMatches();
+      final practices = await _dbHelper.getAllPractices();
 
       setState(() {
         _players = players;
         _teams = teams;
         _matches = matches;
+        _practices = practices;
         _isLoading = false;
       });
     } catch (e) {
@@ -111,6 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _players = [];
         _teams = [];
         _matches = [];
+        _practices = [];
         _isLoading = false;
       });
     }
@@ -137,169 +143,290 @@ class _MyHomePageState extends State<MyHomePage> {
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _showCreatePlayerModal(context),
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  const Icon(
-                                    Icons.people,
-                                    size: 48,
-                                    color: Color(0xFF00E5FF),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Players',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                  ),
-                                  Text(
-                                    '${_players.length}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Tap to add',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF00E5FF),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                  // Dashboard Tiles Row
+                  SizedBox(
+                    height: 100,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTile(
+                            'Players',
+                            Icons.people,
+                            Color(0xFF00E5FF),
+                            _players.length,
+                            () => _toggleExpanded('players'),
+                            () => _showCreatePlayerModal(context),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _showCreateTeamModal(context),
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  const Icon(
-                                    Icons.groups,
-                                    size: 48,
-                                    color: Color(0xFF00FF88),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Teams',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                  ),
-                                  Text(
-                                    '${_teams.length}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Tap to add',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF00E5FF),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTile(
+                            'Teams',
+                            Icons.groups,
+                            Color(0xFF00FF88),
+                            _teams.length,
+                            () => _toggleExpanded('teams'),
+                            () => _showCreateTeamModal(context),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _showCreateMatchModal(context),
-                          child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  const Icon(
-                                    Icons.sports_volleyball,
-                                    size: 48,
-                                    color: Color(0xFF00E5FF),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Matches',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge,
-                                  ),
-                                  Text(
-                                    '${_matches.length}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.headlineMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Tap to add',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF00E5FF),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTile(
+                            'Matches',
+                            Icons.sports_volleyball,
+                            Color(0xFF00E5FF),
+                            _matches.length,
+                            () => _toggleExpanded('matches'),
+                            () => _showCreateMatchModal(context),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Recent Matches',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: _matches.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'No matches yet. Add some teams and create matches!',
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: _matches.length,
-                            itemBuilder: (context, index) {
-                              final match = _matches[index];
-                              return Card(
-                                child: ListTile(
-                                  leading: const Icon(
-                                    Icons.sports_volleyball,
-                                    color: Color(0xFF00E5FF),
-                                  ),
-                                  title: Text(match.matchTitle),
-                                  subtitle: Text(
-                                    '${match.startTime?.day}/${match.startTime?.month}/${match.startTime?.year} at ${match.startTime?.hour}:${match.startTime?.minute.toString().padLeft(2, '0')}',
-                                  ),
-                                ),
-                              );
-                            },
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTile(
+                            'Practices',
+                            Icons.fitness_center,
+                            Color(0xFF00FF88),
+                            _practices.length,
+                            () => _toggleExpanded('practices'),
+                            () => _showCreatePracticeModal(context),
                           ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 16),
+                  // Expanded Content Area
+                  Expanded(child: _buildExpandedContent()),
                 ],
               ),
             ),
+    );
+  }
+
+  void _toggleExpanded(String tileName) {
+    setState(() {
+      _expandedTile = _expandedTile == tileName ? null : tileName;
+    });
+  }
+
+  Widget _buildTile(
+    String title,
+    IconData icon,
+    Color color,
+    int count,
+    VoidCallback onTap,
+    VoidCallback onAdd,
+  ) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: onAdd,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(Icons.add, size: 16, color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandedContent() {
+    if (_expandedTile == null) {
+      return const Center(
+        child: Text(
+          'Select a category above to view items',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    switch (_expandedTile) {
+      case 'players':
+        return _buildPlayersList();
+      case 'teams':
+        return _buildTeamsList();
+      case 'matches':
+        return _buildMatchesList();
+      case 'practices':
+        return _buildPracticesList();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildPlayersList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Players (${_players.length})',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _players.isEmpty
+              ? const Center(child: Text('No players yet. Tap + to add one!'))
+              : ListView.builder(
+                  itemCount: _players.length,
+                  itemBuilder: (context, index) {
+                    final player = _players[index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.person,
+                          color: Color(0xFF00E5FF),
+                        ),
+                        title: Text(player.fullName),
+                        subtitle: Text(player.jerseyDisplay),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeamsList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Teams (${_teams.length})',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _teams.isEmpty
+              ? const Center(child: Text('No teams yet. Tap + to add one!'))
+              : ListView.builder(
+                  itemCount: _teams.length,
+                  itemBuilder: (context, index) {
+                    final team = _teams[index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.groups,
+                          color: Color(0xFF00FF88),
+                        ),
+                        title: Text(team.teamName),
+                        subtitle: Text('${team.clubName} - Age ${team.age}'),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMatchesList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Matches (${_matches.length})',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _matches.isEmpty
+              ? const Center(child: Text('No matches yet. Tap + to add one!'))
+              : ListView.builder(
+                  itemCount: _matches.length,
+                  itemBuilder: (context, index) {
+                    final match = _matches[index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.sports_volleyball,
+                          color: Color(0xFF00E5FF),
+                        ),
+                        title: Text(match.matchTitle),
+                        subtitle: Text(
+                          '${match.startTime?.day}/${match.startTime?.month}/${match.startTime?.year} at ${match.startTime?.hour}:${match.startTime?.minute.toString().padLeft(2, '0')}',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPracticesList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Practices (${_practices.length})',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _practices.isEmpty
+              ? const Center(child: Text('No practices yet. Tap + to add one!'))
+              : ListView.builder(
+                  itemCount: _practices.length,
+                  itemBuilder: (context, index) {
+                    final practice = _practices[index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.fitness_center,
+                          color: Color(0xFF00FF88),
+                        ),
+                        title: Text(practice.practiceTitle),
+                        subtitle: Text(
+                          '${practice.date.day}/${practice.date.month}/${practice.date.year}',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -611,6 +738,93 @@ class _MyHomePageState extends State<MyHomePage> {
               child: const Text('Reset'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showCreatePracticeModal(BuildContext context) {
+    Team? selectedTeam;
+    DateTime selectedDate = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create New Practice'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<Team>(
+                      value: selectedTeam,
+                      decoration: const InputDecoration(
+                        labelText: 'Team',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _teams.map((Team team) {
+                        return DropdownMenuItem<Team>(
+                          value: team,
+                          child: Text(team.teamName),
+                        );
+                      }).toList(),
+                      onChanged: (Team? newValue) {
+                        setState(() {
+                          selectedTeam = newValue;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text('Practice Date'),
+                      subtitle: Text(
+                        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now().subtract(
+                            const Duration(days: 30),
+                          ),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (selectedTeam != null) {
+                      final practice = Practice(
+                        team: selectedTeam!,
+                        date: selectedDate,
+                      );
+                      await _dbHelper.insertPractice(practice);
+                      _loadData();
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
+import 'models/practice.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -18,7 +19,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'counter.db');
+    String path = join(await getDatabasesPath(), 'vb_stats.db');
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
@@ -64,6 +65,16 @@ class DatabaseHelper {
         startTime INTEGER,
         FOREIGN KEY (homeTeamId) REFERENCES teams (id) ON DELETE CASCADE,
         FOREIGN KEY (awayTeamId) REFERENCES teams (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Create practices table
+    await db.execute('''
+      CREATE TABLE practices(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        teamId INTEGER,
+        date INTEGER,
+        FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE CASCADE
       )
     ''');
   }
@@ -229,9 +240,61 @@ class DatabaseHelper {
     return await db.delete('matches', where: 'id = ?', whereArgs: [id]);
   }
 
+  // Practice CRUD operations
+  Future<int> insertPractice(Practice practice) async {
+    final db = await database;
+    return await db.insert('practices', practice.toMap());
+  }
+
+  Future<List<Practice>> getAllPractices() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('practices');
+    List<Practice> practices = [];
+    for (var map in maps) {
+      final team = await getTeam(map['teamId']);
+      if (team != null) {
+        practices.add(Practice.fromMap(map, team: team));
+      }
+    }
+    return practices;
+  }
+
+  Future<Practice?> getPractice(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'practices',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      final map = maps.first;
+      final team = await getTeam(map['teamId']);
+      if (team != null) {
+        return Practice.fromMap(map, team: team);
+      }
+    }
+    return null;
+  }
+
+  Future<int> updatePractice(Practice practice) async {
+    final db = await database;
+    return await db.update(
+      'practices',
+      practice.toMap(),
+      where: 'id = ?',
+      whereArgs: [practice.id],
+    );
+  }
+
+  Future<int> deletePractice(int id) async {
+    final db = await database;
+    return await db.delete('practices', where: 'id = ?', whereArgs: [id]);
+  }
+
   // Clear all data from database
   Future<void> clearDatabase() async {
     final db = await database;
+    await db.delete('practices');
     await db.delete('matches');
     await db.delete('team_players');
     await db.delete('teams');
