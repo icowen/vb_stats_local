@@ -6,6 +6,8 @@ import 'models/team.dart';
 import 'database_helper.dart';
 import 'team_stats_page.dart';
 import 'team_stats_table.dart';
+import 'widgets/stats_section.dart';
+import 'utils/date_utils.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -166,7 +168,9 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                                       ).textTheme.titleSmall,
                                     ),
                                     Text(
-                                      '${widget.practice.date.day}/${widget.practice.date.month}/${widget.practice.date.year}',
+                                      DateFormatter.formatDate(
+                                        widget.practice.date,
+                                      ),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodySmall,
@@ -1282,43 +1286,6 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     );
   }
 
-  Widget _buildServeToggleButton(String label, String value) {
-    final isDisabled = _selectedPlayer == null;
-    final isSelected = _selectedServeType == value;
-    final buttonColor = isDisabled
-        ? Colors.grey
-        : isSelected
-        ? const Color(0xFF00E5FF)
-        : const Color(0xFF00E5FF).withOpacity(0.5);
-
-    return OutlinedButton(
-      onPressed: isDisabled
-          ? null
-          : () {
-              setState(() {
-                _selectedServeType = isSelected ? null : value;
-              });
-            },
-      style: OutlinedButton.styleFrom(
-        foregroundColor: buttonColor,
-        side: BorderSide(color: buttonColor, width: isSelected ? 3 : 2),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        minimumSize: const Size(0, 32),
-        backgroundColor: isSelected
-            ? const Color(0xFF00E5FF).withOpacity(0.1)
-            : null,
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: buttonColor,
-        ),
-      ),
-    );
-  }
-
   Future<void> _saveEditedEvent(
     BuildContext context,
     Event originalEvent,
@@ -1637,95 +1604,49 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
 
   Widget _buildServingStats() {
     final servingStats = _getServingStats();
+    final totalServes =
+        servingStats['float']! +
+        servingStats['hybrid']! +
+        servingStats['spin']!;
+    final subtitle =
+        '$totalServes serves | Float:${servingStats['float']} | In:${servingStats['in']} | Error:${servingStats['error']}';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Serving', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _isLoadingPlayerStats
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Loading...',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          '${servingStats['float']! + servingStats['hybrid']! + servingStats['spin']!} serves | F:${servingStats['float']} | In:${servingStats['in']} | Err:${servingStats['error']}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[400],
-                          ),
-                          textAlign: TextAlign.end,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ),
-              ],
+    return StatsSection(
+      title: 'Serving',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        // Serve Type Toggle
+        ServeToggleRow(
+          selectedValue: _selectedServeType,
+          onChanged: (value) => setState(() => _selectedServeType = value),
+          isDisabled: _selectedPlayer == null,
+        ),
+        const SizedBox(height: 8),
+        // Serve Results
+        StatButtonRow(
+          buttons: [
+            StatButtonData(
+              label: 'Ace',
+              color: const Color(0xFF00FF88),
+              onPressed: () => _recordServeResult('ace'),
+              isDisabled: _selectedPlayer == null,
             ),
-            const SizedBox(height: 8),
-            // Serve Type Toggle
-            Row(
-              children: [
-                Expanded(child: _buildServeToggleButton('Float', 'float')),
-                const SizedBox(width: 4),
-                Expanded(child: _buildServeToggleButton('Hybrid', 'hybrid')),
-                const SizedBox(width: 4),
-                Expanded(child: _buildServeToggleButton('Spin', 'spin')),
-              ],
+            StatButtonData(
+              label: 'In',
+              color: const Color(0xFF00E5FF),
+              onPressed: () => _recordServeResult('in'),
+              isDisabled: _selectedPlayer == null,
             ),
-            const SizedBox(height: 8),
-            // Serve Results
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatButton(
-                    'Ace',
-                    const Color(0xFF00FF88),
-                    () => _recordServeResult('ace'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    'In',
-                    const Color(0xFF00E5FF),
-                    () => _recordServeResult('in'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    'Error',
-                    const Color(0xFFFF4444),
-                    () => _recordServeResult('error'),
-                  ),
-                ),
-              ],
+            StatButtonData(
+              label: 'Error',
+              color: const Color(0xFFFF4444),
+              onPressed: () => _recordServeResult('error'),
+              isDisabled: _selectedPlayer == null,
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -1733,99 +1654,49 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     final passingStats = _getPassingStats();
     final passingAverage = _getPassingAverage();
     final totalPasses = passingStats.values.reduce((a, b) => a + b);
+    final subtitle =
+        '$totalPasses attempts | ${passingAverage.toStringAsFixed(2)} average | Ace:${passingStats['ace']} | 1:${passingStats['1']} | 2:${passingStats['2']} | 3:${passingStats['3']} | 0:${passingStats['0']}';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Passing', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _isLoadingPlayerStats
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Loading...',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          '$totalPasses attempts | ${passingAverage.toStringAsFixed(2)} avg | A:${passingStats['ace']} | 1:${passingStats['1']} | 2:${passingStats['2']} | 3:${passingStats['3']} | 0:${passingStats['0']}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[400],
-                          ),
-                          textAlign: TextAlign.end,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ),
-              ],
+    return StatsSection(
+      title: 'Passing',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        StatButtonRow(
+          buttons: [
+            StatButtonData(
+              label: 'Ace',
+              color: const Color(0xFF00FF88),
+              onPressed: () => _recordPassRating('ace'),
+              isDisabled: _selectedPlayer == null,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatButton(
-                    'Ace',
-                    const Color(0xFF00FF88),
-                    () => _recordPassRating('ace'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    '0',
-                    const Color(0xFFFF4444),
-                    () => _recordPassRating('0'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    '1',
-                    const Color(0xFFFF8800),
-                    () => _recordPassRating('1'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    '2',
-                    const Color(0xFF00E5FF),
-                    () => _recordPassRating('2'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    '3',
-                    const Color(0xFF00FF88),
-                    () => _recordPassRating('3'),
-                  ),
-                ),
-              ],
+            StatButtonData(
+              label: '0',
+              color: const Color(0xFFFF4444),
+              onPressed: () => _recordPassRating('0'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: '1',
+              color: const Color(0xFFFF8800),
+              onPressed: () => _recordPassRating('1'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: '2',
+              color: const Color(0xFF00E5FF),
+              onPressed: () => _recordPassRating('2'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: '3',
+              color: const Color(0xFF00FF88),
+              onPressed: () => _recordPassRating('3'),
+              isDisabled: _selectedPlayer == null,
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -1835,109 +1706,37 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     final hitPercentage = totalAttacks > 0
         ? (attackingStats['kill']! - attackingStats['error']!) / totalAttacks
         : 0.0;
+    final subtitle =
+        '$totalAttacks attacks | .${(hitPercentage * 1000).round().toString().padLeft(3, '0')} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Attacking',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _isLoadingPlayerStats
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Loading...',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[400],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          '$totalAttacks attacks | .${(hitPercentage * 1000).round().toString().padLeft(3, '0')} hit | K:${attackingStats['kill']} | In:${attackingStats['in']} | Err:${attackingStats['error']}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[400],
-                          ),
-                          textAlign: TextAlign.end,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ),
-              ],
+    return StatsSection(
+      title: 'Attacking',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        StatButtonRow(
+          buttons: [
+            StatButtonData(
+              label: 'Kill',
+              color: const Color(0xFF00FF88),
+              onPressed: () => _recordAttackResult('kill'),
+              isDisabled: _selectedPlayer == null,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatButton(
-                    'Kill',
-                    const Color(0xFF00FF88),
-                    () => _recordAttackResult('kill'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    'In',
-                    const Color(0xFF00E5FF),
-                    () => _recordAttackResult('in'),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _buildStatButton(
-                    'Error',
-                    const Color(0xFFFF4444),
-                    () => _recordAttackResult('error'),
-                  ),
-                ),
-              ],
+            StatButtonData(
+              label: 'In',
+              color: const Color(0xFF00E5FF),
+              onPressed: () => _recordAttackResult('in'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: 'Error',
+              color: const Color(0xFFFF4444),
+              onPressed: () => _recordAttackResult('error'),
+              isDisabled: _selectedPlayer == null,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatButton(String label, Color color, VoidCallback onPressed) {
-    final isDisabled = _selectedPlayer == null;
-    final buttonColor = isDisabled ? Colors.grey : color;
-
-    return OutlinedButton(
-      onPressed: isDisabled ? null : onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: buttonColor,
-        side: BorderSide(color: buttonColor, width: 2),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        minimumSize: const Size(0, 32),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          color: buttonColor,
-        ),
-      ),
+      ],
     );
   }
 

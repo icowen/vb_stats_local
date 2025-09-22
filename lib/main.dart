@@ -5,6 +5,7 @@ import 'models/team.dart';
 import 'models/match.dart';
 import 'models/practice.dart';
 import 'practice_stats_page.dart';
+import 'utils/date_utils.dart';
 
 void main() {
   runApp(const MyApp());
@@ -435,9 +436,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           color: Color(0xFF00FF88),
                         ),
                         title: Text(practice.practiceTitle),
-                        subtitle: Text(
-                          '${practice.date.day}/${practice.date.month}/${practice.date.year}',
-                        ),
+                        subtitle: Text(DateFormatter.formatDate(practice.date)),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -665,7 +664,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: ListTile(
                             title: const Text('Date'),
                             subtitle: Text(
-                              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                              DateFormatter.formatDate(selectedDate),
                             ),
                             onTap: () async {
                               final date = await showDatePicker(
@@ -809,9 +808,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(height: 16),
                     ListTile(
                       title: const Text('Practice Date'),
-                      subtitle: Text(
-                        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                      ),
+                      subtitle: Text(DateFormatter.formatDate(selectedDate)),
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
