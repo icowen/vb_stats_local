@@ -45,6 +45,10 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
   String? _selectedServeType;
   bool _isLoadingPlayerStats = false;
 
+  // Caching system
+  Map<int, List<Event>> _playerEventsCache = {};
+  bool _cacheInitialized = false;
+
   // Undo/Redo system
   List<UndoAction> _undoStack = [];
   List<UndoAction> _redoStack = [];
@@ -94,6 +98,9 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         _teamEvents = teamEvents;
         _isLoading = false;
       });
+
+      // Initialize cache for all team players
+      await _initializePlayerCache();
     } catch (e) {
       print('Error loading practice players: $e');
       setState(() {
@@ -264,18 +271,30 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                                     final player = _teamPlayers[index];
                                     final isSelected =
                                         _selectedPlayer?.id == player.id;
-                                    return Card(
+                                    return Container(
                                       margin: EdgeInsets.zero,
-                                      color: isSelected
-                                          ? const Color(
-                                              0xFF00E5FF,
-                                            ).withOpacity(0.1)
-                                          : null,
-                                      child: GestureDetector(
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(
+                                                0xFF00E5FF,
+                                              ).withOpacity(0.1)
+                                            : null,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? const Color(0xFF00E5FF)
+                                              : Colors.grey[300]!,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: InkWell(
                                         onTap: () => _selectPlayer(player),
                                         onLongPress: () =>
                                             _showRemovePlayerModal(player),
-                                        child: Padding(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          width: double.infinity,
+                                          height: double.infinity,
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
                                             vertical: 8,
@@ -444,6 +463,24 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     );
   }
 
+  Future<void> _initializePlayerCache() async {
+    if (_cacheInitialized) return;
+
+    try {
+      // Pre-load events for all team players
+      for (final player in _teamPlayers) {
+        if (player.id != null) {
+          final events = await _dbHelper.getEventsForPlayer(player.id!);
+          _playerEventsCache[player.id!] = events;
+        }
+      }
+      _cacheInitialized = true;
+      print('Player cache initialized for ${_teamPlayers.length} players');
+    } catch (e) {
+      print('Error initializing player cache: $e');
+    }
+  }
+
   void _selectPlayer(Player player) async {
     if (_selectedPlayer?.id == player.id) {
       // If clicking the same player, unselect them
@@ -461,11 +498,18 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         _isLoadingPlayerStats = true;
       });
 
-      await _loadPlayerEvents();
-
-      setState(() {
-        _isLoadingPlayerStats = false;
-      });
+      // Use cache if available, otherwise load from database
+      if (player.id != null && _playerEventsCache.containsKey(player.id!)) {
+        _playerEvents = _playerEventsCache[player.id!]!;
+        setState(() {
+          _isLoadingPlayerStats = false;
+        });
+      } else {
+        await _loadPlayerEvents();
+        setState(() {
+          _isLoadingPlayerStats = false;
+        });
+      }
     }
   }
 
@@ -475,9 +519,23 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     try {
       final events = await _dbHelper.getEventsForPlayer(_selectedPlayer!.id!);
       _playerEvents = events;
+
+      // Update cache
+      if (_selectedPlayer!.id != null) {
+        _playerEventsCache[_selectedPlayer!.id!] = events;
+      }
     } catch (e) {
       print('Error loading player events: $e');
       _playerEvents = [];
+    }
+  }
+
+  Future<void> _updatePlayerCache(int playerId) async {
+    try {
+      final events = await _dbHelper.getEventsForPlayer(playerId);
+      _playerEventsCache[playerId] = events;
+    } catch (e) {
+      print('Error updating player cache for player $playerId: $e');
     }
   }
 
@@ -714,6 +772,13 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                             _teamPlayers.addAll(newPlayers);
                           });
 
+                          // Update cache for new players
+                          for (final player in newPlayers) {
+                            if (player.id != null) {
+                              await _updatePlayerCache(player.id!);
+                            }
+                          }
+
                           print(
                             'Successfully added ${newPlayers.length} players to practice',
                           );
@@ -769,8 +834,14 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         _teamPlayers.removeWhere((p) => p.id == player.id);
         if (_selectedPlayer?.id == player.id) {
           _selectedPlayer = null;
+          _playerEvents = [];
         }
       });
+
+      // Remove from cache
+      if (player.id != null) {
+        _playerEventsCache.remove(player.id);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1873,7 +1944,11 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         ),
       );
 
-      await _loadPlayerEvents();
+      // Update cache for the selected player
+      if (_selectedPlayer?.id != null) {
+        await _updatePlayerCache(_selectedPlayer!.id!);
+        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
+      }
       await _loadTeamEvents();
 
       final serveType = _selectedServeType!;
@@ -1938,7 +2013,11 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         ),
       );
 
-      await _loadPlayerEvents();
+      // Update cache for the selected player
+      if (_selectedPlayer?.id != null) {
+        await _updatePlayerCache(_selectedPlayer!.id!);
+        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
+      }
       await _loadTeamEvents();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1996,7 +2075,11 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         ),
       );
 
-      await _loadPlayerEvents();
+      // Update cache for the selected player
+      if (_selectedPlayer?.id != null) {
+        await _updatePlayerCache(_selectedPlayer!.id!);
+        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
+      }
       await _loadTeamEvents();
 
       ScaffoldMessenger.of(context).showSnackBar(
