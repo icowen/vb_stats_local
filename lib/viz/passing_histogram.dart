@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/player.dart';
 import '../models/event.dart';
+import '../utils/passing_rating_gradient.dart';
 
 class PassingHistogram extends StatelessWidget {
   final List<Player> practicePlayers;
@@ -49,6 +50,16 @@ class PassingHistogram extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Calculate team passing average
+    final passingAverage = totalPasses > 0
+        ? (totalRatings['ace']! * 3 +
+                  totalRatings['3']! * 3 +
+                  totalRatings['2']! * 2 +
+                  totalRatings['1']! * 1 +
+                  totalRatings['0']! * 0) /
+              totalPasses
+        : 0.0;
+
     final maxCount = totalRatings.values.reduce(math.max);
 
     return Card(
@@ -70,7 +81,15 @@ class PassingHistogram extends StatelessWidget {
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
+            // Team passing average as big number
+            Text(
+              passingAverage.toStringAsFixed(2),
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: PassingRatingGradient.getColor(passingAverage),
+              ),
+            ),
             Expanded(
               child: Center(
                 child: Column(
@@ -151,47 +170,51 @@ class PassingHistogram extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 2),
-        Container(
+        SizedBox(
           width: 50,
           height: 180,
-          decoration: BoxDecoration(
-            border: Border(
-              left: isFirst
-                  ? BorderSide(color: Colors.grey[300]!)
-                  : BorderSide.none,
-              right: BorderSide(color: Colors.grey[300]!),
-              top: BorderSide(color: Colors.grey[300]!),
-              bottom: BorderSide(color: Colors.grey[300]!),
-            ),
-          ),
           child: Stack(
             children: [
-              if (height > 0)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: height,
-                    decoration: BoxDecoration(color: color),
-                  ),
-                ),
+              // Container without border
+              Container(width: 50, height: 180),
+              // Bar - always show at least a small bar for count = 0
               Positioned(
-                top: height > 0 ? math.max(5, 180 - height - 15) : 160,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: height > 0 ? height : 2, // Show 2px bar for count = 0
+                  decoration: BoxDecoration(color: color),
+                ),
+              ),
+              // Number positioned on the colored bar
+              Positioned(
+                top: height > 0
+                    ? 180 -
+                          height +
+                          5 // Position within the bar (5px from top of bar)
+                    : 180 -
+                          2 -
+                          15, // Position above the small bar for zero counts
                 left: 0,
                 right: 0,
                 child: Text(
                   count.toString(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        offset: const Offset(1, 1),
-                        blurRadius: 2,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ],
+                    color: height > 0
+                        ? Colors.white
+                        : Colors
+                              .black, // White on colored bar, black above small bar
+                    shadows: height > 0
+                        ? [
+                            Shadow(
+                              offset: const Offset(1, 1),
+                              blurRadius: 2,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ]
+                        : null,
                   ),
                   textAlign: TextAlign.center,
                 ),

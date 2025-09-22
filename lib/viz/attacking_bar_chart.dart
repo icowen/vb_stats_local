@@ -20,6 +20,9 @@ class AttackingBarChart extends StatelessWidget {
     // Calculate attacking stats for each player
     final playerStats = <Player, Map<String, int>>{};
     int maxTotal = 0;
+    int totalKills = 0;
+    int totalErrors = 0;
+    int totalAttempts = 0;
 
     for (final player in practicePlayers) {
       final playerEvents = teamEvents
@@ -28,6 +31,60 @@ class AttackingBarChart extends StatelessWidget {
       final attackingStats = getPlayerAttackingStats(playerEvents);
       playerStats[player] = attackingStats;
       maxTotal = math.max(maxTotal, attackingStats['total'] ?? 0);
+
+      // Add to totals
+      totalKills += (attackingStats['kill'] ?? 0) as int;
+      totalErrors += (attackingStats['error'] ?? 0) as int;
+      totalAttempts += (attackingStats['total'] ?? 0) as int;
+    }
+
+    // Filter out players with no attempts and sort by hitting percentage (best to worst)
+    final playersWithAttempts =
+        playerStats.entries
+            .where((entry) => (entry.value['total'] ?? 0) > 0)
+            .toList()
+          ..sort((a, b) {
+            final aTotal = a.value['total'] ?? 0;
+            final bTotal = b.value['total'] ?? 0;
+            final aKills = a.value['kill'] ?? 0;
+            final bKills = b.value['kill'] ?? 0;
+
+            // Calculate hitting percentages
+            final aHitPercentage = aTotal > 0 ? aKills / aTotal : 0.0;
+            final bHitPercentage = bTotal > 0 ? bKills / bTotal : 0.0;
+
+            // Sort by hitting percentage (descending - best to worst)
+            return bHitPercentage.compareTo(aHitPercentage);
+          });
+
+    // If no players have attempts, show empty state
+    if (playersWithAttempts.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Attacking Attempts by Player',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'No attacking attempts recorded',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     // Always show the chart, even if no attacks
@@ -40,38 +97,96 @@ class AttackingBarChart extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
               'Attacking Attempts by Player',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            // Totals row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildTotalStat(
+                  context,
+                  'Kills',
+                  totalKills,
+                  const Color(0xFF00FF88),
+                ),
+                _buildTotalStat(
+                  context,
+                  'Errors',
+                  totalErrors,
+                  const Color(0xFFFF4444),
+                ),
+                _buildTotalStat(
+                  context,
+                  'Attempts',
+                  totalAttempts,
+                  const Color(0xFF00E5FF),
+                ),
+              ],
+            ),
             Expanded(
               child: Center(
-                child: SizedBox(
-                  height: 200,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: playerStats.entries.map((entry) {
-                      final player = entry.key;
-                      final stats = entry.value;
-                      final total = stats['total'] ?? 0;
-                      final kill = stats['kill'] ?? 0;
-                      final inPlay = stats['in'] ?? 0;
-                      final error = stats['error'] ?? 0;
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      children: playersWithAttempts.map((entry) {
+                        final player = entry.key;
+                        final stats = entry.value;
+                        final total = stats['total'] ?? 0;
+                        final kill = stats['kill'] ?? 0;
+                        final inPlay = stats['in'] ?? 0;
+                        final error = stats['error'] ?? 0;
 
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                          child: Column(
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
                             children: [
+                              // Player name and total
+                              SizedBox(
+                                width: 80,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      player.firstName ?? 'Unknown',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      _formatHitPercentage(
+                                        total > 0 ? (kill / total) : 0.0,
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Colors.grey[600],
+                                            fontSize: 10,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               // Bar
-                              Expanded(
+                              SizedBox(
+                                width: 250,
                                 child: Container(
-                                  width: double.infinity,
+                                  height: 24,
                                   decoration: BoxDecoration(
                                     border: Border.all(
                                       color: Colors.grey[300]!,
@@ -79,165 +194,146 @@ class AttackingBarChart extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: total > 0
-                                      ? Stack(
-                                          children: [
-                                            // Kill segment (top)
-                                            if (kill > 0)
-                                              Positioned(
-                                                top: 0,
-                                                left: 0,
-                                                right: 0,
-                                                height: (kill / maxTotal) * 180,
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                      0xFF00E5FF,
-                                                    ),
-                                                    borderRadius:
-                                                        const BorderRadius.only(
-                                                          topLeft:
-                                                              Radius.circular(
-                                                                4,
-                                                              ),
-                                                          topRight:
-                                                              Radius.circular(
-                                                                4,
+                                      ? ClipRect(
+                                          child: SizedBox(
+                                            width: 250,
+                                            child: Builder(
+                                              builder: (context) {
+                                                // Calculate the actual bar width (scaled to maxTotal)
+                                                // Subtract 2px for left and right borders
+                                                final barWidth =
+                                                    (total / maxTotal) * 248;
+                                                return Row(
+                                                  children: [
+                                                    // Kill segment (left)
+                                                    if (kill > 0)
+                                                      Container(
+                                                        width:
+                                                            (kill / total) *
+                                                            barWidth,
+                                                        height: 24,
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(
+                                                            0xFF00FF88,
+                                                          ),
+                                                          borderRadius:
+                                                              const BorderRadius.only(
+                                                                topLeft:
+                                                                    Radius.circular(
+                                                                      4,
+                                                                    ),
+                                                                bottomLeft:
+                                                                    Radius.circular(
+                                                                      4,
+                                                                    ),
                                                               ),
                                                         ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      kill.toString(),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            shadows: [
-                                                              Shadow(
-                                                                offset:
-                                                                    const Offset(
-                                                                      1,
-                                                                      1,
-                                                                    ),
-                                                                blurRadius: 2,
-                                                                color: Colors
-                                                                    .black
-                                                                    .withOpacity(
-                                                                      0.5,
-                                                                    ),
-                                                              ),
-                                                            ],
+                                                        child: Center(
+                                                          child: Text(
+                                                            kill.toString(),
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
                                                           ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            // In segment (middle)
-                                            if (inPlay > 0)
-                                              Positioned(
-                                                top: (kill / maxTotal) * 180,
-                                                left: 0,
-                                                right: 0,
-                                                height:
-                                                    (inPlay / maxTotal) * 180,
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                      0xFF00B8D4,
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      inPlay.toString(),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            shadows: [
-                                                              Shadow(
-                                                                offset:
-                                                                    const Offset(
-                                                                      1,
-                                                                      1,
-                                                                    ),
-                                                                blurRadius: 2,
-                                                                color: Colors
-                                                                    .black
-                                                                    .withOpacity(
-                                                                      0.5,
-                                                                    ),
-                                                              ),
-                                                            ],
+                                                        ),
+                                                      ),
+                                                    // In segment (middle)
+                                                    if (inPlay > 0)
+                                                      Container(
+                                                        width:
+                                                            (inPlay / total) *
+                                                            barWidth,
+                                                        height: 24,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                              color:
+                                                                  const Color(
+                                                                    0xFF00E5FF,
+                                                                  ),
+                                                            ),
+                                                        child: Center(
+                                                          child: Text(
+                                                            inPlay.toString(),
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
                                                           ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            // Error segment (bottom)
-                                            if (error > 0)
-                                              Positioned(
-                                                top:
-                                                    ((kill + inPlay) /
-                                                        maxTotal) *
-                                                    180,
-                                                left: 0,
-                                                right: 0,
-                                                height:
-                                                    (error / maxTotal) * 180,
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    color: const Color(
-                                                      0xFF0097A7,
-                                                    ),
-                                                    borderRadius:
-                                                        const BorderRadius.only(
-                                                          bottomLeft:
-                                                              Radius.circular(
-                                                                4,
-                                                              ),
-                                                          bottomRight:
-                                                              Radius.circular(
-                                                                4,
+                                                        ),
+                                                      ),
+                                                    // Error segment (right)
+                                                    if (error > 0)
+                                                      Container(
+                                                        width:
+                                                            (error / total) *
+                                                            barWidth,
+                                                        height: 24,
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(
+                                                            0xFFFF4444,
+                                                          ),
+                                                          borderRadius:
+                                                              const BorderRadius.only(
+                                                                topRight:
+                                                                    Radius.circular(
+                                                                      4,
+                                                                    ),
+                                                                bottomRight:
+                                                                    Radius.circular(
+                                                                      4,
+                                                                    ),
                                                               ),
                                                         ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      error.toString(),
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            shadows: [
-                                                              Shadow(
-                                                                offset:
-                                                                    const Offset(
-                                                                      1,
-                                                                      1,
+                                                        child: Center(
+                                                          child: Text(
+                                                            error.toString(),
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .bodySmall
+                                                                ?.copyWith(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  shadows: [
+                                                                    Shadow(
+                                                                      offset:
+                                                                          const Offset(
+                                                                            1,
+                                                                            1,
+                                                                          ),
+                                                                      blurRadius:
+                                                                          2,
+                                                                      color: Colors
+                                                                          .black
+                                                                          .withOpacity(
+                                                                            0.5,
+                                                                          ),
                                                                     ),
-                                                                blurRadius: 2,
-                                                                color: Colors
-                                                                    .black
-                                                                    .withOpacity(
-                                                                      0.5,
-                                                                    ),
-                                                              ),
-                                                            ],
+                                                                  ],
+                                                                ),
                                                           ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
+                                                        ),
+                                                      ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
+                                          ),
                                         )
                                       : Center(
                                           child: Text(
@@ -253,31 +349,11 @@ class AttackingBarChart extends StatelessWidget {
                                         ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              // Player name
-                              Text(
-                                player.firstName ?? 'Unknown',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              // Total attempts
-                              Text(
-                                'Total: $total',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Colors.grey[600],
-                                      fontSize: 10,
-                                    ),
-                                textAlign: TextAlign.center,
-                              ),
                             ],
                           ),
-                        ),
-                      );
-                    }).toList(),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ),
@@ -287,11 +363,11 @@ class AttackingBarChart extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem(context, 'Kill', const Color(0xFF00E5FF)),
+                _buildLegendItem(context, 'Kill', const Color(0xFF00FF88)),
                 const SizedBox(width: 16),
-                _buildLegendItem(context, 'In', const Color(0xFF00B8D4)),
+                _buildLegendItem(context, 'In', const Color(0xFF00E5FF)),
                 const SizedBox(width: 16),
-                _buildLegendItem(context, 'Error', const Color(0xFF0097A7)),
+                _buildLegendItem(context, 'Error', const Color(0xFFFF4444)),
               ],
             ),
           ],
@@ -316,5 +392,40 @@ class AttackingBarChart extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
+  }
+
+  Widget _buildTotalStat(
+    BuildContext context,
+    String label,
+    int value,
+    Color color,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value.toString(),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatHitPercentage(double hitPercentage) {
+    if (hitPercentage >= 1.0) {
+      return '1.000';
+    } else {
+      return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+    }
   }
 }

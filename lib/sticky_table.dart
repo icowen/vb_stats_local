@@ -28,6 +28,14 @@ class _StickyTableState extends State<StickyTable> {
   late ScrollController _statsScrollController;
   late ScrollController _stickyScrollController;
 
+  String _formatHitPercentage(double hitPercentage) {
+    if (hitPercentage >= 1.0) {
+      return '1.000';
+    } else {
+      return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -206,8 +214,7 @@ class _StickyTableState extends State<StickyTable> {
         final kill = attackingStats['kill'] as int;
         final error = attackingStats['error'] as int;
         final hitPercentage = total > 0 ? (kill - error) / total : 0.0;
-        final hitPercentageString =
-            '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+        final hitPercentageString = _formatHitPercentage(hitPercentage);
 
         return Container(
           decoration: const BoxDecoration(

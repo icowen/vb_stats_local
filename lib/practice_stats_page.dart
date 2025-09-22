@@ -52,6 +52,15 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
   // Undo/Redo system
   List<UndoAction> _undoStack = [];
   List<UndoAction> _redoStack = [];
+
+  String _formatHitPercentage(double hitPercentage) {
+    if (hitPercentage >= 1.0) {
+      return '1.000';
+    } else {
+      return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+    }
+  }
+
   static const int maxUndoActions = 20;
 
   @override
@@ -1868,7 +1877,7 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
         ? (attackingStats['kill']! - attackingStats['error']!) / totalAttacks
         : 0.0;
     final subtitle =
-        '$totalAttacks attacks | .${(hitPercentage * 1000).round().toString().padLeft(3, '0')} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
+        '$totalAttacks attacks | ${_formatHitPercentage(hitPercentage)} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
 
     return StatsSection(
       title: 'Attacking',

@@ -23,6 +23,14 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
   List<Event> _teamEvents = [];
   bool _isLoading = true;
 
+  String _formatHitPercentage(double hitPercentage) {
+    if (hitPercentage >= 1.0) {
+      return '1.000';
+    } else {
+      return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -210,8 +218,7 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
             final kill = stats['kill'] as int;
             final error = stats['error'] as int;
             final hitPercentage = total > 0 ? (kill - error) / total : 0.0;
-            value =
-                '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+            value = _formatHitPercentage(hitPercentage);
             break;
         }
         maxLength = math.max(maxLength, value.length.toDouble());
@@ -250,6 +257,7 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildHighlightsSection(),
                   const SizedBox(height: 24),
@@ -340,8 +348,8 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
             'Most Efficient',
             Icons.trending_up,
             highlights['mostEfficient']!,
-            '.${(highlights['bestHitPercentage']! * 1000).round().toString().padLeft(3, '0')} hit %',
-            const Color(0xFF9C27B0),
+            '${_formatHitPercentage(highlights['bestHitPercentage']!)} hit %',
+            const Color(0xFFFFFF00),
           ),
         ),
       ],
@@ -1431,7 +1439,7 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
                                         child: SizedBox(
                                           width: double.infinity,
                                           child: Text(
-                                            '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}',
+                                            _formatHitPercentage(hitPercentage),
                                             textAlign: TextAlign.center,
                                             overflow: TextOverflow.ellipsis,
                                           ),
