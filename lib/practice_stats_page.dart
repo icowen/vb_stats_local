@@ -80,6 +80,14 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
       final teamEvents = await _dbHelper.getEventsForPractice(
         widget.practice.id!,
       );
+
+      print(
+        'Practice ${widget.practice.id} has ${practicePlayers.length} players',
+      );
+      for (final player in practicePlayers) {
+        print('  - ${player.fullName} (ID: ${player.id})');
+      }
+
       setState(() {
         _teamPlayers = practicePlayers;
         _allPlayers = allPlayers;
@@ -610,13 +618,45 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                       trailing: const Icon(Icons.add, color: Color(0xFF00E5FF)),
                       onTap: () async {
                         try {
-                          // Get all players from the team
-                          final teamPlayers = await _dbHelper.getTeamPlayers(
-                            team.id!,
+                          // Get all players from the team using the new teamId field
+                          final allPlayers = await _dbHelper.getAllPlayers();
+                          final teamPlayers = allPlayers
+                              .where((player) => player.teamId == team.id)
+                              .toList();
+
+                          // Filter out players already in the practice
+                          final currentPlayerIds = _teamPlayers
+                              .map((p) => p.id)
+                              .toSet();
+                          final newPlayers = teamPlayers
+                              .where(
+                                (player) =>
+                                    !currentPlayerIds.contains(player.id),
+                              )
+                              .toList();
+
+                          print(
+                            'Found ${teamPlayers.length} players in team ${team.teamName}, ${newPlayers.length} new players to add to practice ${widget.practice.id}',
                           );
 
-                          // Add each player to the practice
-                          for (final player in teamPlayers) {
+                          if (newPlayers.isEmpty) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'All players from ${team.teamName} are already in this practice',
+                                ),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Add each new player to the practice
+                          for (final player in newPlayers) {
+                            print(
+                              'Adding player ${player.fullName} to practice',
+                            );
                             await _dbHelper.addPlayerToPractice(
                               widget.practice.id!,
                               player.id!,
@@ -625,8 +665,12 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
 
                           // Update local state
                           setState(() {
-                            _teamPlayers.addAll(teamPlayers);
+                            _teamPlayers.addAll(newPlayers);
                           });
+
+                          print(
+                            'Successfully added ${newPlayers.length} players to practice',
+                          );
 
                           Navigator.of(context).pop();
 

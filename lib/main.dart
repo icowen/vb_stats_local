@@ -336,6 +336,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         title: Text(player.fullName),
                         subtitle: Text(player.jerseyDisplay),
+                        onTap: () => _showEditPlayerModal(context, player),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () =>
+                              _showEditPlayerModal(context, player),
+                        ),
                       ),
                     );
                   },
@@ -369,6 +375,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         title: Text(team.teamName),
                         subtitle: Text('${team.clubName} - Age ${team.age}'),
+                        onTap: () => _showEditTeamModal(context, team),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _showEditTeamModal(context, team),
+                        ),
                       ),
                     );
                   },
@@ -463,70 +474,96 @@ class _MyHomePageState extends State<MyHomePage> {
     final firstNameController = TextEditingController();
     final lastNameController = TextEditingController();
     final jerseyNumberController = TextEditingController();
+    Team? selectedTeam;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Create New Player'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: firstNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'First Name',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create New Player'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: firstNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: lastNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Last Name',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: jerseyNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Jersey Number (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<Team>(
+                      value: selectedTeam,
+                      decoration: const InputDecoration(
+                        labelText: 'Team (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _teams.map((Team team) {
+                        return DropdownMenuItem<Team>(
+                          value: team,
+                          child: Text(team.teamName),
+                        );
+                      }).toList(),
+                      onChanged: (Team? newValue) {
+                        setState(() {
+                          selectedTeam = newValue;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: lastNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Last Name',
-                    border: OutlineInputBorder(),
-                  ),
-                  textCapitalization: TextCapitalization.words,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: jerseyNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Jersey Number (Optional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
+                ElevatedButton(
+                  onPressed: () async {
+                    if (firstNameController.text.isNotEmpty &&
+                        lastNameController.text.isNotEmpty) {
+                      final jerseyNumber =
+                          jerseyNumberController.text.isNotEmpty
+                          ? int.parse(jerseyNumberController.text)
+                          : null;
+                      final player = Player(
+                        firstName: firstNameController.text,
+                        lastName: lastNameController.text,
+                        jerseyNumber: jerseyNumber,
+                        teamId: selectedTeam?.id,
+                      );
+                      await _dbHelper.insertPlayer(player);
+                      _loadData();
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Create'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (firstNameController.text.isNotEmpty &&
-                    lastNameController.text.isNotEmpty) {
-                  final jerseyNumber = jerseyNumberController.text.isNotEmpty
-                      ? int.parse(jerseyNumberController.text)
-                      : null; // Use NULL if empty
-                  final player = Player(
-                    firstName: firstNameController.text,
-                    lastName: lastNameController.text,
-                    jerseyNumber: jerseyNumber,
-                  );
-                  await _dbHelper.insertPlayer(player);
-                  _loadData();
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -845,6 +882,28 @@ class _MyHomePageState extends State<MyHomePage> {
                       final practiceId = await _dbHelper.insertPractice(
                         practice,
                       );
+
+                      // Add all team players to the practice
+                      final teamPlayers = _players
+                          .where((player) => player.teamId == selectedTeam!.id)
+                          .toList();
+
+                      print(
+                        'Found ${teamPlayers.length} players for team ${selectedTeam!.teamName}',
+                      );
+
+                      for (final player in teamPlayers) {
+                        print(
+                          'Adding player ${player.fullName} to practice $practiceId',
+                        );
+                        await _dbHelper.addPlayerToPractice(
+                          practiceId,
+                          player.id!,
+                        );
+                      }
+
+                      print('Finished adding players to practice');
+
                       _loadData();
                       Navigator.of(context).pop();
 
@@ -863,6 +922,418 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
                   },
                   child: const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditPlayerModal(BuildContext context, Player player) {
+    final firstNameController = TextEditingController(text: player.firstName);
+    final lastNameController = TextEditingController(text: player.lastName);
+    final jerseyNumberController = TextEditingController(
+      text: player.jerseyNumber?.toString() ?? '',
+    );
+    Team? selectedTeam = _teams.firstWhere(
+      (team) => team.id == player.teamId,
+      orElse: () => _teams.first,
+    );
+    if (player.teamId == null) selectedTeam = null;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Player'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: firstNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: lastNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Last Name',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: jerseyNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'Jersey Number (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<Team>(
+                      value: selectedTeam,
+                      decoration: const InputDecoration(
+                        labelText: 'Team (Optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem<Team>(
+                          value: null,
+                          child: Text('No Team'),
+                        ),
+                        ..._teams.map((Team team) {
+                          return DropdownMenuItem<Team>(
+                            value: team,
+                            child: Text(team.teamName),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (Team? newValue) {
+                        setState(() {
+                          selectedTeam = newValue;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (firstNameController.text.isNotEmpty &&
+                        lastNameController.text.isNotEmpty) {
+                      final jerseyNumber =
+                          jerseyNumberController.text.isNotEmpty
+                          ? int.parse(jerseyNumberController.text)
+                          : null;
+                      final updatedPlayer = Player(
+                        id: player.id,
+                        firstName: firstNameController.text,
+                        lastName: lastNameController.text,
+                        jerseyNumber: jerseyNumber,
+                        teamId: selectedTeam?.id,
+                      );
+                      await _dbHelper.updatePlayer(updatedPlayer);
+                      _loadData();
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Update'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditTeamModal(BuildContext context, Team team) async {
+    final teamNameController = TextEditingController(text: team.teamName);
+    final clubNameController = TextEditingController(text: team.clubName);
+    final ageController = TextEditingController(text: team.age.toString());
+
+    // Load current team players
+    final allPlayers = await _dbHelper.getAllPlayers();
+    final currentTeamPlayers = allPlayers
+        .where((player) => player.teamId == team.id)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Team'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Team Details Section
+                      const Text(
+                        'Team Details',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: teamNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Team Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: clubNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Club Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: ageController,
+                        decoration: const InputDecoration(
+                          labelText: 'Age',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Current Players Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Current Players',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showAddPlayerToTeamModal(
+                              context,
+                              team,
+                              setState,
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Player'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Current Players List
+                      if (currentTeamPlayers.isEmpty)
+                        const Text(
+                          'No players on this team',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        )
+                      else
+                        ...currentTeamPlayers
+                            .map(
+                              (player) => Card(
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.person,
+                                    color: Color(0xFF00E5FF),
+                                  ),
+                                  title: Text(player.fullName),
+                                  subtitle: Text(player.jerseyDisplay),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () async {
+                                      // Remove player from team by setting teamId to null
+                                      final updatedPlayer = Player(
+                                        id: player.id,
+                                        firstName: player.firstName,
+                                        lastName: player.lastName,
+                                        jerseyNumber: player.jerseyNumber,
+                                        teamId: null,
+                                      );
+                                      await _dbHelper.updatePlayer(
+                                        updatedPlayer,
+                                      );
+                                      _loadData(); // Refresh main data
+                                      setState(() {}); // Refresh modal state
+                                    },
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (teamNameController.text.isNotEmpty &&
+                        clubNameController.text.isNotEmpty &&
+                        ageController.text.isNotEmpty) {
+                      final updatedTeam = Team(
+                        id: team.id,
+                        teamName: teamNameController.text,
+                        clubName: clubNameController.text,
+                        age: int.parse(ageController.text),
+                      );
+                      await _dbHelper.updateTeam(updatedTeam);
+                      _loadData();
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  child: const Text('Update Team'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddPlayerToTeamModal(
+    BuildContext context,
+    Team team,
+    StateSetter setState,
+  ) async {
+    final allPlayers = await _dbHelper.getAllPlayers();
+    final availablePlayers = allPlayers
+        .where((player) => player.teamId == null || player.teamId == team.id)
+        .toList();
+    final Set<int> selectedPlayerIds = <int>{};
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, modalSetState) {
+            return AlertDialog(
+              title: const Text('Add Players to Team'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Select players to add to ${team.teamName}:',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 12),
+                    if (availablePlayers.isEmpty)
+                      const Text(
+                        'No available players to add',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: availablePlayers.length,
+                          itemBuilder: (context, index) {
+                            final player = availablePlayers[index];
+                            final isSelected = selectedPlayerIds.contains(
+                              player.id,
+                            );
+                            final isAlreadyOnTeam = player.teamId == team.id;
+
+                            return Card(
+                              child: CheckboxListTile(
+                                title: Text(player.fullName),
+                                subtitle: Text(player.jerseyDisplay),
+                                value: isSelected,
+                                onChanged: isAlreadyOnTeam
+                                    ? null
+                                    : (bool? value) {
+                                        modalSetState(() {
+                                          if (value == true) {
+                                            selectedPlayerIds.add(player.id!);
+                                          } else {
+                                            selectedPlayerIds.remove(player.id);
+                                          }
+                                        });
+                                      },
+                                secondary: isAlreadyOnTeam
+                                    ? const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        color: Color(0xFF00E5FF),
+                                      ),
+                                enabled: !isAlreadyOnTeam,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    if (selectedPlayerIds.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          '${selectedPlayerIds.length} player(s) selected',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF00E5FF),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: selectedPlayerIds.isEmpty
+                      ? null
+                      : () async {
+                          // Add all selected players to the team
+                          for (final playerId in selectedPlayerIds) {
+                            final player = availablePlayers.firstWhere(
+                              (p) => p.id == playerId,
+                            );
+                            final updatedPlayer = Player(
+                              id: player.id,
+                              firstName: player.firstName,
+                              lastName: player.lastName,
+                              jerseyNumber: player.jerseyNumber,
+                              teamId: team.id,
+                            );
+                            await _dbHelper.updatePlayer(updatedPlayer);
+                          }
+                          _loadData(); // Refresh main data
+                          setState(() {}); // Refresh modal state
+                          Navigator.of(context).pop();
+                        },
+                  child: Text(
+                    selectedPlayerIds.isEmpty
+                        ? 'Add Players'
+                        : 'Add ${selectedPlayerIds.length} Player(s)',
+                  ),
                 ),
               ],
             );

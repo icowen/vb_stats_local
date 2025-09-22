@@ -21,7 +21,12 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'vb_stats.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   // Check and create tables if they don't exist
@@ -37,7 +42,9 @@ class DatabaseHelper {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             firstName TEXT NOT NULL,
             lastName TEXT NOT NULL,
-            jerseyNumber INTEGER
+            jerseyNumber INTEGER,
+            teamId INTEGER,
+            FOREIGN KEY (teamId) REFERENCES teams (id) ON DELETE SET NULL
           )
         ''',
       },
@@ -235,6 +242,16 @@ class DatabaseHelper {
     ''');
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add teamId column to players table
+      await db.execute('ALTER TABLE players ADD COLUMN teamId INTEGER');
+      await db.execute('''
+        CREATE INDEX IF NOT EXISTS idx_players_teamId ON players(teamId)
+      ''');
+    }
+  }
+
   // Player CRUD operations
   Future<int> insertPlayer(Player player) async {
     final db = await database;
@@ -334,9 +351,8 @@ class DatabaseHelper {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.rawQuery(
       '''
-      SELECT p.* FROM players p
-      INNER JOIN team_players tp ON p.id = tp.playerId
-      WHERE tp.teamId = ?
+      SELECT * FROM players
+      WHERE teamId = ?
     ''',
       [teamId],
     );
@@ -346,10 +362,19 @@ class DatabaseHelper {
   // Practice-Player relationship operations
   Future<void> addPlayerToPractice(int practiceId, int playerId) async {
     final db = await database;
-    await db.insert('practice_players', {
-      'practiceId': practiceId,
-      'playerId': playerId,
-    });
+    try {
+      await db.insert('practice_players', {
+        'practiceId': practiceId,
+        'playerId': playerId,
+      });
+    } catch (e) {
+      // Handle unique constraint violation (duplicate entry)
+      if (e.toString().contains('UNIQUE constraint failed')) {
+        print('Player $playerId is already in practice $practiceId');
+        return; // Silently ignore duplicate entries
+      }
+      rethrow; // Re-throw other errors
+    }
   }
 
   Future<void> removePlayerFromPractice(int practiceId, int playerId) async {
@@ -359,6 +384,17 @@ class DatabaseHelper {
       where: 'practiceId = ? AND playerId = ?',
       whereArgs: [practiceId, playerId],
     );
+  }
+
+  Future<bool> isPlayerInPractice(int practiceId, int playerId) async {
+    final db = await database;
+    final result = await db.query(
+      'practice_players',
+      where: 'practiceId = ? AND playerId = ?',
+      whereArgs: [practiceId, playerId],
+      limit: 1,
+    );
+    return result.isNotEmpty;
   }
 
   Future<List<Player>> getPracticePlayers(int practiceId) async {
