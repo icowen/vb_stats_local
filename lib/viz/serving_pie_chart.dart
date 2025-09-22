@@ -44,7 +44,7 @@ class ServingPieChart extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -60,15 +60,24 @@ class ServingPieChart extends StatelessWidget {
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: 200,
-              height: 200,
-              child: CustomPaint(
-                painter: PieChartPainter(servingTypes, totalServes),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: CustomPaint(
+                        painter: PieChartPainter(servingTypes, totalServes),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildLegend(servingTypes, totalServes),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            _buildLegend(servingTypes, totalServes),
           ],
         ),
       ),

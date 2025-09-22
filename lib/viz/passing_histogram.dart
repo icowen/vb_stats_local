@@ -55,7 +55,7 @@ class PassingHistogram extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -71,53 +71,62 @@ class PassingHistogram extends StatelessWidget {
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 4),
-            IntrinsicWidth(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  _buildHistogramBar(
-                    context,
-                    'Ace',
-                    totalRatings['ace']!,
-                    maxCount,
-                    totalPasses,
-                    const Color(0xFF00E5FF),
-                    isFirst: true,
-                  ),
-                  _buildHistogramBar(
-                    context,
-                    '0',
-                    totalRatings['0']!,
-                    maxCount,
-                    totalPasses,
-                    const Color(0xFF00B8D4),
-                  ),
-                  _buildHistogramBar(
-                    context,
-                    '1',
-                    totalRatings['1']!,
-                    maxCount,
-                    totalPasses,
-                    const Color(0xFF0097A7),
-                  ),
-                  _buildHistogramBar(
-                    context,
-                    '2',
-                    totalRatings['2']!,
-                    maxCount,
-                    totalPasses,
-                    const Color(0xFF006064),
-                  ),
-                  _buildHistogramBar(
-                    context,
-                    '3',
-                    totalRatings['3']!,
-                    maxCount,
-                    totalPasses,
-                    const Color(0xFF004D40),
-                    isLast: true,
-                  ),
-                ],
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IntrinsicWidth(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          _buildHistogramBar(
+                            context,
+                            'Ace',
+                            totalRatings['ace']!,
+                            maxCount,
+                            totalPasses,
+                            const Color(0xFF00E5FF),
+                            isFirst: true,
+                          ),
+                          _buildHistogramBar(
+                            context,
+                            '0',
+                            totalRatings['0']!,
+                            maxCount,
+                            totalPasses,
+                            const Color(0xFF00B8D4),
+                          ),
+                          _buildHistogramBar(
+                            context,
+                            '1',
+                            totalRatings['1']!,
+                            maxCount,
+                            totalPasses,
+                            const Color(0xFF0097A7),
+                          ),
+                          _buildHistogramBar(
+                            context,
+                            '2',
+                            totalRatings['2']!,
+                            maxCount,
+                            totalPasses,
+                            const Color(0xFF006064),
+                          ),
+                          _buildHistogramBar(
+                            context,
+                            '3',
+                            totalRatings['3']!,
+                            maxCount,
+                            totalPasses,
+                            const Color(0xFF004D40),
+                            isLast: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -137,14 +146,14 @@ class PassingHistogram extends StatelessWidget {
     bool isLast = false,
   }) {
     final percentage = totalPasses > 0 ? (count / totalPasses * 100) : 0.0;
-    final height = maxCount > 0 ? (count / maxCount * 120) : 0.0;
+    final height = maxCount > 0 ? (count / maxCount * 180) : 0.0;
 
     return Column(
       children: [
         const SizedBox(height: 2),
         Container(
-          width: 40,
-          height: 120,
+          width: 50,
+          height: 180,
           decoration: BoxDecoration(
             border: Border(
               left: isFirst
@@ -168,7 +177,7 @@ class PassingHistogram extends StatelessWidget {
                   ),
                 ),
               Positioned(
-                top: height > 0 ? math.max(5, 120 - height - 15) : 100,
+                top: height > 0 ? math.max(5, 180 - height - 15) : 160,
                 left: 0,
                 right: 0,
                 child: Text(

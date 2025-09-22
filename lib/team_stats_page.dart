@@ -255,7 +255,8 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
                   const SizedBox(height: 24),
 
                   // Visualizations Row
-                  IntrinsicHeight(
+                  SizedBox(
+                    height: 350,
                     child: Row(
                       children: [
                         Expanded(

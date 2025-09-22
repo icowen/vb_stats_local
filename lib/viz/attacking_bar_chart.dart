@@ -37,9 +37,9 @@ class AttackingBarChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -49,213 +49,237 @@ class AttackingBarChart extends StatelessWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: playerStats.entries.map((entry) {
-                  final player = entry.key;
-                  final stats = entry.value;
-                  final total = stats['total'] ?? 0;
-                  final kill = stats['kill'] ?? 0;
-                  final inPlay = stats['in'] ?? 0;
-                  final error = stats['error'] ?? 0;
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  height: 200,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: playerStats.entries.map((entry) {
+                      final player = entry.key;
+                      final stats = entry.value;
+                      final total = stats['total'] ?? 0;
+                      final kill = stats['kill'] ?? 0;
+                      final inPlay = stats['in'] ?? 0;
+                      final error = stats['error'] ?? 0;
 
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                      child: Column(
-                        children: [
-                          // Bar
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: total > 0
-                                  ? Stack(
-                                      children: [
-                                        // Kill segment (top)
-                                        if (kill > 0)
-                                          Positioned(
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: (kill / maxTotal) * 180,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF00E5FF),
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                      topLeft: Radius.circular(
-                                                        4,
-                                                      ),
-                                                      topRight: Radius.circular(
-                                                        4,
-                                                      ),
-                                                    ),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  kill.toString(),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        shadows: [
-                                                          Shadow(
-                                                            offset:
-                                                                const Offset(
-                                                                  1,
-                                                                  1,
-                                                                ),
-                                                            blurRadius: 2,
-                                                            color: Colors.black
-                                                                .withOpacity(
-                                                                  0.5,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        // In segment (middle)
-                                        if (inPlay > 0)
-                                          Positioned(
-                                            top: (kill / maxTotal) * 180,
-                                            left: 0,
-                                            right: 0,
-                                            height: (inPlay / maxTotal) * 180,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF00B8D4),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  inPlay.toString(),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        shadows: [
-                                                          Shadow(
-                                                            offset:
-                                                                const Offset(
-                                                                  1,
-                                                                  1,
-                                                                ),
-                                                            blurRadius: 2,
-                                                            color: Colors.black
-                                                                .withOpacity(
-                                                                  0.5,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        // Error segment (bottom)
-                                        if (error > 0)
-                                          Positioned(
-                                            top:
-                                                ((kill + inPlay) / maxTotal) *
-                                                180,
-                                            left: 0,
-                                            right: 0,
-                                            height: (error / maxTotal) * 180,
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF0097A7),
-                                                borderRadius:
-                                                    const BorderRadius.only(
-                                                      bottomLeft:
-                                                          Radius.circular(4),
-                                                      bottomRight:
-                                                          Radius.circular(4),
-                                                    ),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  error.toString(),
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        shadows: [
-                                                          Shadow(
-                                                            offset:
-                                                                const Offset(
-                                                                  1,
-                                                                  1,
-                                                                ),
-                                                            blurRadius: 2,
-                                                            color: Colors.black
-                                                                .withOpacity(
-                                                                  0.5,
-                                                                ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        '0',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Colors.grey[600],
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: Column(
+                            children: [
+                              // Bar
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Colors.grey[300]!,
                                     ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // Player name
-                          Text(
-                            player.firstName ?? 'Unknown',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          // Total attempts
-                          Text(
-                            'Total: $total',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Colors.grey[600],
-                                  fontSize: 10,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: total > 0
+                                      ? Stack(
+                                          children: [
+                                            // Kill segment (top)
+                                            if (kill > 0)
+                                              Positioned(
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: (kill / maxTotal) * 180,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFF00E5FF,
+                                                    ),
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                          topLeft:
+                                                              Radius.circular(
+                                                                4,
+                                                              ),
+                                                          topRight:
+                                                              Radius.circular(
+                                                                4,
+                                                              ),
+                                                        ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      kill.toString(),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            shadows: [
+                                                              Shadow(
+                                                                offset:
+                                                                    const Offset(
+                                                                      1,
+                                                                      1,
+                                                                    ),
+                                                                blurRadius: 2,
+                                                                color: Colors
+                                                                    .black
+                                                                    .withOpacity(
+                                                                      0.5,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            // In segment (middle)
+                                            if (inPlay > 0)
+                                              Positioned(
+                                                top: (kill / maxTotal) * 180,
+                                                left: 0,
+                                                right: 0,
+                                                height:
+                                                    (inPlay / maxTotal) * 180,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFF00B8D4,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      inPlay.toString(),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            shadows: [
+                                                              Shadow(
+                                                                offset:
+                                                                    const Offset(
+                                                                      1,
+                                                                      1,
+                                                                    ),
+                                                                blurRadius: 2,
+                                                                color: Colors
+                                                                    .black
+                                                                    .withOpacity(
+                                                                      0.5,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            // Error segment (bottom)
+                                            if (error > 0)
+                                              Positioned(
+                                                top:
+                                                    ((kill + inPlay) /
+                                                        maxTotal) *
+                                                    180,
+                                                left: 0,
+                                                right: 0,
+                                                height:
+                                                    (error / maxTotal) * 180,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                      0xFF0097A7,
+                                                    ),
+                                                    borderRadius:
+                                                        const BorderRadius.only(
+                                                          bottomLeft:
+                                                              Radius.circular(
+                                                                4,
+                                                              ),
+                                                          bottomRight:
+                                                              Radius.circular(
+                                                                4,
+                                                              ),
+                                                        ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      error.toString(),
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            shadows: [
+                                                              Shadow(
+                                                                offset:
+                                                                    const Offset(
+                                                                      1,
+                                                                      1,
+                                                                    ),
+                                                                blurRadius: 2,
+                                                                color: Colors
+                                                                    .black
+                                                                    .withOpacity(
+                                                                      0.5,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            '0',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                        ),
                                 ),
-                            textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              // Player name
+                              Text(
+                                player.firstName ?? 'Unknown',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // Total attempts
+                              Text(
+                                'Total: $total',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey[600],
+                                      fontSize: 10,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
