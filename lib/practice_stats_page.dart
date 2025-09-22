@@ -5,6 +5,7 @@ import 'models/event.dart';
 import 'models/team.dart';
 import 'database_helper.dart';
 import 'team_stats_page.dart';
+import 'team_stats_table.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -699,22 +700,28 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
   }
 
   Widget _buildPlayerStatsArea() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Stats Groups (always show)
-        Expanded(
-          child: Column(
-            children: [
-              _buildServingStats(),
-              const SizedBox(height: 8),
-              _buildPassingStats(),
-              const SizedBox(height: 8),
-              _buildAttackingStats(),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats Groups (always show)
+          _buildServingStats(),
+          const SizedBox(height: 8),
+          _buildPassingStats(),
+          const SizedBox(height: 8),
+          _buildAttackingStats(),
+          const SizedBox(height: 16),
+          // Team Stats Table
+          Text(
+            'Team Statistics',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          _buildTeamStatsTable(),
+        ],
+      ),
     );
   }
 
@@ -2229,5 +2236,132 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     }
 
     return totalPoints / passEvents.length;
+  }
+
+  // Stats calculation methods (copied from team stats page)
+  Map<String, int> _getPlayerServingStats(List<Event> playerEvents) {
+    final serveEvents = playerEvents
+        .where((e) => e.type == EventType.serve)
+        .toList();
+    final stats = <String, int>{
+      'float': 0,
+      'hybrid': 0,
+      'spin': 0,
+      'in': 0,
+      'error': 0,
+      'total': 0,
+    };
+
+    for (final event in serveEvents) {
+      final serveType = event.metadata['serveType'] as String?;
+      final result = event.metadata['result'] as String?;
+
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (serveType != null) {
+        stats[serveType] = (stats[serveType] ?? 0) + 1;
+      }
+      if (result != null) {
+        stats[result] = (stats[result] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, dynamic> _getPlayerPassingStats(List<Event> playerEvents) {
+    final passEvents = playerEvents
+        .where((e) => e.type == EventType.pass)
+        .toList();
+    final stats = <String, dynamic>{
+      'ace': 0,
+      '0': 0,
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      'total': 0,
+    };
+
+    for (final event in passEvents) {
+      final rating = event.metadata['rating'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (rating != null && stats.containsKey(rating)) {
+        stats[rating] = (stats[rating] ?? 0) + 1;
+      }
+    }
+
+    // Calculate average
+    double totalPoints = 0;
+    for (final event in passEvents) {
+      final rating = event.metadata['rating'] as String?;
+      switch (rating) {
+        case 'ace':
+          totalPoints += 0;
+          break;
+        case '3':
+          totalPoints += 3;
+          break;
+        case '2':
+          totalPoints += 2;
+          break;
+        case '1':
+          totalPoints += 1;
+          break;
+        case '0':
+          totalPoints += 0;
+          break;
+      }
+    }
+
+    final average = passEvents.isEmpty ? 0.0 : totalPoints / passEvents.length;
+    stats['average'] = average;
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerAttackingStats(List<Event> playerEvents) {
+    final attackEvents = playerEvents
+        .where((e) => e.type == EventType.attack)
+        .toList();
+    final stats = <String, int>{'kill': 0, 'in': 0, 'error': 0, 'total': 0};
+
+    for (final event in attackEvents) {
+      final result = event.metadata['result'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (result != null && stats.containsKey(result)) {
+        stats[result] = (stats[result] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Widget _buildTeamStatsTable() {
+    if (_teamPlayers.isEmpty) {
+      return const Center(
+        child: Text(
+          'No players added yet.\nAdd players to see team statistics.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    final columnWidths = TeamStatsTable.calculateColumnWidths(
+      _teamPlayers,
+      _teamEvents,
+      _getPlayerServingStats,
+      _getPlayerPassingStats,
+      _getPlayerAttackingStats,
+    );
+
+    return TeamStatsTable.buildPlayerStatsTable(
+      context,
+      columnWidths,
+      _teamPlayers,
+      _teamEvents,
+      _getPlayerServingStats,
+      _getPlayerPassingStats,
+      _getPlayerAttackingStats,
+    );
   }
 }
