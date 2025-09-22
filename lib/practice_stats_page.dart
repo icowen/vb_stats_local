@@ -191,7 +191,7 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                         ),
                         // Add Player and Team Buttons
                         Padding(
-                          padding: const EdgeInsets.all(12.0),
+                          padding: const EdgeInsets.all(8.0),
                           child: Row(
                             children: [
                               Expanded(
@@ -206,7 +206,8 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                                     backgroundColor: const Color(0xFF00E5FF),
                                     foregroundColor: Colors.black,
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      vertical: 6,
+                                      horizontal: 8,
                                     ),
                                   ),
                                 ),
@@ -224,7 +225,8 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                                     backgroundColor: const Color(0xFF00FF88),
                                     foregroundColor: Colors.black,
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      vertical: 6,
+                                      horizontal: 8,
                                     ),
                                   ),
                                 ),
@@ -248,65 +250,78 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
                                     ),
                                   ),
                                 )
-                              : ListView.builder(
+                              : GridView.builder(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 2.2,
+                                        crossAxisSpacing: 4,
+                                        mainAxisSpacing: 2,
+                                      ),
+                                  padding: const EdgeInsets.all(8),
                                   itemCount: _teamPlayers.length,
                                   itemBuilder: (context, index) {
                                     final player = _teamPlayers[index];
                                     final isSelected =
                                         _selectedPlayer?.id == player.id;
                                     return Card(
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 2,
-                                      ),
+                                      margin: EdgeInsets.zero,
                                       color: isSelected
                                           ? const Color(
                                               0xFF00E5FF,
                                             ).withOpacity(0.1)
                                           : null,
-                                      child: ListTile(
-                                        dense: true,
-                                        leading: Icon(
-                                          Icons.person,
-                                          color: isSelected
-                                              ? const Color(0xFF00E5FF)
-                                              : const Color(0xFF00E5FF),
-                                          size: 16,
-                                        ),
-                                        title: Text(
-                                          player.fullName,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                            color: isSelected
-                                                ? const Color(0xFF00E5FF)
-                                                : null,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          player.jerseyDisplay,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: isSelected
-                                                ? const Color(
-                                                    0xFF00E5FF,
-                                                  ).withOpacity(0.8)
-                                                : null,
-                                          ),
-                                        ),
-                                        trailing: IconButton(
-                                          onPressed: () =>
-                                              _removePlayerFromPractice(player),
-                                          icon: const Icon(
-                                            Icons.remove_circle_outline,
-                                            size: 16,
-                                          ),
-                                          color: Colors.red,
-                                          iconSize: 16,
-                                        ),
+                                      child: GestureDetector(
                                         onTap: () => _selectPlayer(player),
+                                        onLongPress: () =>
+                                            _showRemovePlayerModal(player),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // Jersey number and first name on one line
+                                              Text(
+                                                player.jerseyNumber != null
+                                                    ? '${player.jerseyDisplay} ${player.firstName ?? ''}'
+                                                    : player.firstName ?? '',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                  color: isSelected
+                                                      ? const Color(0xFF00E5FF)
+                                                      : null,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              // Last name on second line
+                                              Text(
+                                                player.lastName ?? '',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                  color: isSelected
+                                                      ? const Color(0xFF00E5FF)
+                                                      : null,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     );
                                   },
@@ -550,6 +565,37 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showRemovePlayerModal(Player player) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Remove Player'),
+          content: Text(
+            'Are you sure you want to remove ${player.fullName} from this practice?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _removePlayerFromPractice(player);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Remove'),
             ),
           ],
         );

@@ -35,8 +35,7 @@ class Player {
 
   String get fullName => '$firstName $lastName';
 
-  String get jerseyDisplay =>
-      jerseyNumber == null ? 'No Jersey' : '#$jerseyNumber';
+  String get jerseyDisplay => jerseyNumber == null ? '' : '#$jerseyNumber';
 
   @override
   String toString() {
