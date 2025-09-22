@@ -6,6 +6,7 @@ import 'models/event.dart';
 import 'database_helper.dart';
 import 'viz/passing_histogram.dart';
 import 'viz/serving_pie_chart.dart';
+import 'viz/attacking_bar_chart.dart';
 
 class TeamStatsPage extends StatefulWidget {
   final Practice practice;
@@ -270,6 +271,14 @@ class _TeamStatsPageState extends State<TeamStatsPage> {
                             practicePlayers: _practicePlayers,
                             teamEvents: _teamEvents,
                             getPlayerServingStats: _getPlayerServingStats,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: AttackingBarChart(
+                            practicePlayers: _practicePlayers,
+                            teamEvents: _teamEvents,
+                            getPlayerAttackingStats: _getPlayerAttackingStats,
                           ),
                         ),
                       ],
