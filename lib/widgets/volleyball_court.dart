@@ -2,18 +2,24 @@ import 'package:flutter/material.dart';
 
 class VolleyballCourt extends StatefulWidget {
   final Function(double x, double y)? onCourtTap;
-  final double? selectedX;
-  final double? selectedY;
+  final double? startX;
+  final double? startY;
+  final double? endX;
+  final double? endY;
   final String? selectedAction;
   final bool isRecording;
+  final bool hasStartPoint;
 
   const VolleyballCourt({
     super.key,
     this.onCourtTap,
-    this.selectedX,
-    this.selectedY,
+    this.startX,
+    this.startY,
+    this.endX,
+    this.endY,
     this.selectedAction,
     this.isRecording = false,
+    this.hasStartPoint = false,
   });
 
   @override
@@ -21,9 +27,6 @@ class VolleyballCourt extends StatefulWidget {
 }
 
 class _VolleyballCourtState extends State<VolleyballCourt> {
-  double? _tempX;
-  double? _tempY;
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -31,135 +34,129 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.selectedAction != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E5FF).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF00E5FF)),
-              ),
-              child: Text(
-                'Recording: ${widget.selectedAction}',
-                style: const TextStyle(
-                  color: Color(0xFF00E5FF),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF00E5FF), width: 2),
+              border: Border.all(
+                color: widget.isRecording
+                    ? const Color(0xFF00FF88)
+                    : const Color(0xFF00E5FF),
+                width: 2,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: GestureDetector(
-                onTapDown: (details) {
-                  if (widget.onCourtTap != null && widget.isRecording) {
-                    final RenderBox renderBox =
-                        context.findRenderObject() as RenderBox;
-                    final localPosition = renderBox.globalToLocal(
-                      details.globalPosition,
-                    );
-
-                    // Convert to court coordinates (0-480 for X, 0-240 for Y)
-                    // Calculate court position within the widget
-                    final courtOffsetX = (renderBox.size.width - 480) / 2;
-                    final courtOffsetY = (renderBox.size.height - 240) / 2;
-
-                    // Convert to court coordinates (0-480 range for X, 0-240 range for Y)
-                    final x = ((localPosition.dx - courtOffsetX) / 480 * 480)
-                        .clamp(0.0, 480.0);
-                    final y = ((localPosition.dy - courtOffsetY) / 240 * 240)
-                        .clamp(0.0, 240.0);
-
-                    setState(() {
-                      _tempX = x;
-                      _tempY = y;
-                    });
-
-                    widget.onCourtTap!(x, y);
-                  }
-                },
-                child: CustomPaint(
-                  size: const Size(
-                    660,
-                    330,
-                  ), // Horizontal court with 330x330 square halves
-                  painter: VolleyballCourtPainter(
-                    selectedX: widget.selectedX ?? _tempX,
-                    selectedY: widget.selectedY ?? _tempY,
-                    isRecording: widget.isRecording,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if ((widget.selectedX != null || _tempX != null) &&
-              (widget.selectedY != null || _tempY != null))
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF00FF88)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Stack(
                 children: [
-                  _buildCoordinateDisplay(
-                    'X',
-                    widget.selectedX ?? _tempX!,
-                    const Color(0xFF00E5FF),
+                  GestureDetector(
+                    onTapDown: (details) {
+                      if (widget.onCourtTap != null && widget.isRecording) {
+                        final RenderBox renderBox =
+                            context.findRenderObject() as RenderBox;
+                        final localPosition = renderBox.globalToLocal(
+                          details.globalPosition,
+                        );
+
+                        // Convert to court coordinates (0-480 for X, 0-240 for Y)
+                        // Calculate court position within the widget
+                        final courtOffsetX = (renderBox.size.width - 480) / 2;
+                        final courtOffsetY = (renderBox.size.height - 240) / 2;
+
+                        // Convert to court coordinates (0-480 range for X, 0-240 range for Y)
+                        final x =
+                            ((localPosition.dx - courtOffsetX) / 480 * 480)
+                                .clamp(0.0, 480.0);
+                        final y =
+                            ((localPosition.dy - courtOffsetY) / 240 * 240)
+                                .clamp(0.0, 240.0);
+
+                        widget.onCourtTap!(x, y);
+                      }
+                    },
+                    child: CustomPaint(
+                      size: const Size(
+                        660,
+                        330,
+                      ), // Horizontal court with 330x330 square halves
+                      painter: VolleyballCourtPainter(
+                        startX: widget.startX,
+                        startY: widget.startY,
+                        endX: widget.endX,
+                        endY: widget.endY,
+                        hasStartPoint: widget.hasStartPoint,
+                        isRecording: widget.isRecording,
+                      ),
+                    ),
                   ),
-                  _buildCoordinateDisplay(
-                    'Y',
-                    widget.selectedY ?? _tempY!,
-                    const Color(0xFF00FF88),
-                  ),
+                  // Coordinates overlay in top right
+                  if (widget.hasStartPoint || widget.endX != null)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFF00FF88),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (widget.hasStartPoint)
+                              Text(
+                                'Start: (${widget.startX?.toStringAsFixed(1) ?? '?'}, ${widget.startY?.toStringAsFixed(1) ?? '?'})',
+                                style: const TextStyle(
+                                  color: Color(0xFF00FF88),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            if (widget.hasStartPoint && widget.endX != null)
+                              const SizedBox(width: 8),
+                            if (widget.endX != null)
+                              Text(
+                                'End: (${widget.endX?.toStringAsFixed(1) ?? '?'}, ${widget.endY?.toStringAsFixed(1) ?? '?'})',
+                                style: const TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildCoordinateDisplay(String label, double value, Color color) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        Text(
-          value.toStringAsFixed(1),
-          style: TextStyle(
-            color: color,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }
 
 class VolleyballCourtPainter extends CustomPainter {
-  final double? selectedX;
-  final double? selectedY;
+  final double? startX;
+  final double? startY;
+  final double? endX;
+  final double? endY;
+  final bool hasStartPoint;
   final bool isRecording;
 
   VolleyballCourtPainter({
-    this.selectedX,
-    this.selectedY,
+    this.startX,
+    this.startY,
+    this.endX,
+    this.endY,
+    this.hasStartPoint = false,
     this.isRecording = false,
   });
 
@@ -273,37 +270,81 @@ class VolleyballCourtPainter extends CustomPainter {
       attackLinePaint,
     );
 
-    // Draw selected position if recording
-    if (isRecording && selectedX != null && selectedY != null) {
-      // Convert coordinates to court position
-      final x = courtOffsetX + (selectedX! / 480) * courtSize;
-      final y = courtOffsetY + (selectedY! / 240) * courtHeight;
+    // Draw coordinate points if recording
+    if (isRecording) {
+      // Draw start point if available
+      if (hasStartPoint && startX != null && startY != null) {
+        final startXPos = courtOffsetX + (startX! / 480) * courtSize;
+        final startYPos = courtOffsetY + (startY! / 240) * courtHeight;
 
-      // Draw position marker
-      canvas.drawCircle(
-        Offset(x, y),
-        8,
-        Paint()
-          ..color = const Color(0xFFFF6B6B)
-          ..style = PaintingStyle.fill,
-      );
+        // Draw start point (green)
+        canvas.drawCircle(
+          Offset(startXPos, startYPos),
+          8,
+          Paint()
+            ..color = const Color(0xFF00FF88)
+            ..style = PaintingStyle.fill,
+        );
 
-      canvas.drawCircle(
-        Offset(x, y),
-        12,
-        Paint()
-          ..color = const Color(0xFFFF6B6B)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3,
-      );
+        canvas.drawCircle(
+          Offset(startXPos, startYPos),
+          12,
+          Paint()
+            ..color = const Color(0xFF00FF88)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3,
+        );
+      }
+
+      // Draw end point if available
+      if (endX != null && endY != null) {
+        final endXPos = courtOffsetX + (endX! / 480) * courtSize;
+        final endYPos = courtOffsetY + (endY! / 240) * courtHeight;
+
+        // Draw end point (blue)
+        canvas.drawCircle(
+          Offset(endXPos, endYPos),
+          8,
+          Paint()
+            ..color = const Color(0xFF00E5FF)
+            ..style = PaintingStyle.fill,
+        );
+
+        canvas.drawCircle(
+          Offset(endXPos, endYPos),
+          12,
+          Paint()
+            ..color = const Color(0xFF00E5FF)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3,
+        );
+
+        // Draw line between start and end points
+        if (hasStartPoint && startX != null && startY != null) {
+          final startXPos = courtOffsetX + (startX! / 480) * courtSize;
+          final startYPos = courtOffsetY + (startY! / 240) * courtHeight;
+
+          canvas.drawLine(
+            Offset(startXPos, startYPos),
+            Offset(endXPos, endYPos),
+            Paint()
+              ..color = const Color(0xFFFFFFFF)
+              ..strokeWidth = 2
+              ..style = PaintingStyle.stroke,
+          );
+        }
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return oldDelegate is VolleyballCourtPainter &&
-        (oldDelegate.selectedX != selectedX ||
-            oldDelegate.selectedY != selectedY ||
+        (oldDelegate.startX != startX ||
+            oldDelegate.startY != startY ||
+            oldDelegate.endX != endX ||
+            oldDelegate.endY != endY ||
+            oldDelegate.hasStartPoint != hasStartPoint ||
             oldDelegate.isRecording != isRecording);
   }
 }

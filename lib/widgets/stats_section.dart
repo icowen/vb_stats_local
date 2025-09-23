@@ -20,14 +20,14 @@ class StatsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: isLoading
                       ? _buildLoadingIndicator()
@@ -35,7 +35,7 @@ class StatsSection extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             ...children,
           ],
         ),
@@ -77,7 +77,7 @@ class StatsSection extends StatelessWidget {
     return Text(
       subtitle!,
       style: TextStyle(
-        fontSize: 14,
+        fontSize: 12,
         color: Colors.grey[600],
         fontWeight: FontWeight.w500,
       ),
@@ -89,12 +89,12 @@ class StatsSection extends StatelessWidget {
   Widget _buildPassingStatsSubtitle() {
     final parts = subtitle!.split(' | ');
     final baseStyle = TextStyle(
-      fontSize: 14,
+      fontSize: 12,
       color: Colors.grey[600],
       fontWeight: FontWeight.w500,
     );
     final boldStyle = TextStyle(
-      fontSize: 14,
+      fontSize: 12,
       color: Colors.grey[600],
       fontWeight: FontWeight.bold,
     );
@@ -157,7 +157,7 @@ class StatButtonRow extends StatelessWidget {
                 onPressed: button.onPressed,
                 isDisabled: button.isDisabled,
               ),
-              if (index < buttons.length - 1) const SizedBox(width: 4),
+              if (index < buttons.length - 1) const SizedBox(width: 2),
             ];
           })
           .expand((widgets) => widgets)
@@ -202,14 +202,14 @@ class ServeToggleRow extends StatelessWidget {
           selectedValue: selectedValue,
           onChanged: isDisabled ? (_) {} : onChanged,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2),
         ServeToggleButton(
           label: 'Hybrid',
           value: 'hybrid',
           selectedValue: selectedValue,
           onChanged: isDisabled ? (_) {} : onChanged,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 2),
         ServeToggleButton(
           label: 'Spin',
           value: 'spin',

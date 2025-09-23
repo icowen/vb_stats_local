@@ -26,8 +26,9 @@ class ServeToggleButton extends StatelessWidget {
               ? const Color(0xFF00E5FF)
               : Colors.grey[300],
           foregroundColor: isSelected ? Colors.white : Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          minimumSize: const Size(0, 24),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         child: Text(
           label,

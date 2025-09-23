@@ -52,8 +52,17 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   // Court coordinate tracking
   bool _isRecordingCoordinates = false;
   String? _recordingAction;
-  double? _selectedX;
-  double? _selectedY;
+  double? _startX;
+  double? _startY;
+  double? _endX;
+  double? _endY;
+  bool _hasStartPoint = false;
+
+  // Action selection for iterative stats
+  String? _selectedActionType; // 'serve', 'pass', 'attack'
+  String? _selectedServeResult; // 'ace', 'in', 'error'
+  String? _selectedPassRating; // 'ace', '3', '2', '1', '0'
+  String? _selectedAttackResult; // 'kill', 'in', 'error'
   List<Event> _teamEvents = [];
   String? _selectedServeType;
   bool _isLoadingPlayerStats = false;
@@ -62,149 +71,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   Map<int, List<Event>> _playerEventsCache = {};
 
   // Court coordinate methods
-  void _onCourtTap(double x, double y) {
-    setState(() {
-      _selectedX = x;
-      _selectedY = y;
-    });
-
-    // Show action selection dialog
-    _showActionSelectionDialog(x, y);
-  }
-
-  void _startRecordingCoordinates(String action) {
-    setState(() {
-      _isRecordingCoordinates = true;
-      _recordingAction = action;
-      _selectedX = null;
-      _selectedY = null;
-    });
-  }
-
-  void _stopRecordingCoordinates() {
-    setState(() {
-      _isRecordingCoordinates = false;
-      _recordingAction = null;
-      _selectedX = null;
-      _selectedY = null;
-    });
-  }
-
-  void _showActionSelectionDialog(double x, double y) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2D2D2D),
-          title: const Text(
-            'Record Action',
-            style: TextStyle(color: Color(0xFF00E5FF)),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Position: (${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)})',
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Select action type:',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildActionChip('Serve', EventType.serve),
-                  _buildActionChip('Pass', EventType.pass),
-                  _buildActionChip('Attack', EventType.attack),
-                  _buildActionChip('Block', EventType.block),
-                  _buildActionChip('Dig', EventType.dig),
-                  _buildActionChip('Set', EventType.set),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _stopRecordingCoordinates();
-              },
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildActionChip(String label, EventType type) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).pop();
-        _recordActionAtCoordinates(type, _selectedX!, _selectedY!);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFF00E5FF).withOpacity(0.2),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF00E5FF)),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF00E5FF),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _recordActionAtCoordinates(EventType type, double x, double y) async {
-    if (_selectedPlayer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a player first'),
-          backgroundColor: Color(0xFFFF4444),
-        ),
-      );
-      return;
-    }
-
-    // Create event with coordinates
-    final event = Event(
-      player: _selectedPlayer!,
-      team: widget.practice.team,
-      type: type,
-      metadata: {'result': 'unknown'}, // Default result
-      timestamp: DateTime.now(),
-      fromX: x,
-      fromY: y,
-      // toX and toY will be set when the action is completed
-    );
-
-    await _eventService.insertEvent(event);
-
-    // Add to undo stack
-    _addUndoAction(
-      UndoAction(
-        type: UndoActionType.create,
-        originalEvent: event,
-        description:
-            'Create ${event.type.displayName} at (${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)}) by ${event.player.fullName}',
-      ),
-    );
-
-    // Refresh data
-    _loadTeamEvents();
-    _loadPlayerEvents();
-    _stopRecordingCoordinates();
-  }
 
   bool _cacheInitialized = false;
 
@@ -636,22 +502,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
-  Future<void> _loadTeamEvents() async {
-    try {
-      final events = await _eventService.getEventsForPractice(
-        widget.practice.id!,
-      );
-      setState(() {
-        _teamEvents = events;
-      });
-    } catch (e) {
-      print('Error loading team events: $e');
-      setState(() {
-        _teamEvents = [];
-      });
-    }
-  }
-
   void _addPlayerToPractice() {
     showDialog(
       context: context,
@@ -972,20 +822,51 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats Groups (always show)
-          _buildServingStats(),
+          // Iterative Stats Collection
+          _buildIterativeStats(),
           const SizedBox(height: 8),
-          _buildPassingStats(),
-          const SizedBox(height: 8),
-          _buildAttackingStats(),
-          const SizedBox(height: 16),
           VolleyballCourt(
             onCourtTap: _onCourtTap,
-            selectedX: _selectedX,
-            selectedY: _selectedY,
+            startX: _startX,
+            startY: _startY,
+            endX: _endX,
+            endY: _endY,
+            hasStartPoint: _hasStartPoint,
             selectedAction: _recordingAction,
             isRecording: _isRecordingCoordinates,
           ),
+          if (_isRecordingCoordinates)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _cancelCoordinateRecording,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4444),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  Text(
+                    _hasStartPoint && _endX != null
+                        ? 'Ready to save - both points recorded'
+                        : _hasStartPoint
+                        ? 'Tap for end point'
+                        : 'Tap for start point',
+                    style: const TextStyle(
+                      color: Color(0xFF00E5FF),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 16),
           // Team Stats Table
           Text(
@@ -1874,373 +1755,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
-  Widget _buildServingStats() {
-    final servingStats = _getServingStats();
-    final totalServes =
-        servingStats['float']! +
-        servingStats['hybrid']! +
-        servingStats['spin']!;
-    final subtitle =
-        '$totalServes serves | Float:${servingStats['float']} | In:${servingStats['in']} | Error:${servingStats['error']}';
-
-    return StatsSection(
-      title: 'Serving',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        // Serve Type Toggle
-        ServeToggleRow(
-          selectedValue: _selectedServeType,
-          onChanged: (value) => setState(() => _selectedServeType = value),
-          isDisabled: _selectedPlayer == null,
-        ),
-        const SizedBox(height: 8),
-        // Record Position Button
-        if (_selectedPlayer != null)
-          Container(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isRecordingCoordinates
-                  ? _stopRecordingCoordinates
-                  : () => _startRecordingCoordinates('Position'),
-              icon: Icon(
-                _isRecordingCoordinates ? Icons.stop : Icons.location_on,
-                size: 16,
-              ),
-              label: Text(
-                _isRecordingCoordinates ? 'Stop Recording' : 'Record Position',
-                style: const TextStyle(fontSize: 12),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isRecordingCoordinates
-                    ? const Color(0xFFFF4444)
-                    : const Color(0xFF9C27B0),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        // Serve Results
-        StatButtonRow(
-          buttons: [
-            StatButtonData(
-              label: 'Ace',
-              color: const Color(0xFF00FF88),
-              onPressed: () => _recordServeResult('ace'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: 'In',
-              color: const Color(0xFF00E5FF),
-              onPressed: () => _recordServeResult('in'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: 'Error',
-              color: const Color(0xFFFF4444),
-              onPressed: () => _recordServeResult('error'),
-              isDisabled: _selectedPlayer == null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPassingStats() {
-    final passingStats = _getPassingStats();
-    final passingAverage = _getPassingAverage();
-    final totalPasses = passingStats.values.reduce((a, b) => a + b);
-    final subtitle =
-        '$totalPasses attempts | ${passingAverage.toStringAsFixed(2)} average | Ace:${passingStats['ace']} | 1:${passingStats['1']} | 2:${passingStats['2']} | 3:${passingStats['3']} | 0:${passingStats['0']}';
-
-    return StatsSection(
-      title: 'Passing',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        StatButtonRow(
-          buttons: [
-            StatButtonData(
-              label: 'Ace',
-              color: const Color(0xFF00FF88),
-              onPressed: () => _recordPassRating('ace'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: '0',
-              color: const Color(0xFFFF4444),
-              onPressed: () => _recordPassRating('0'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: '1',
-              color: const Color(0xFFFF8800),
-              onPressed: () => _recordPassRating('1'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: '2',
-              color: const Color(0xFF00E5FF),
-              onPressed: () => _recordPassRating('2'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: '3',
-              color: const Color(0xFF00FF88),
-              onPressed: () => _recordPassRating('3'),
-              isDisabled: _selectedPlayer == null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAttackingStats() {
-    final attackingStats = _getAttackingStats();
-    final totalAttacks = attackingStats.values.reduce((a, b) => a + b);
-    final hitPercentage = totalAttacks > 0
-        ? (attackingStats['kill']! - attackingStats['error']!) / totalAttacks
-        : 0.0;
-    final subtitle =
-        '$totalAttacks attacks | ${_formatHitPercentage(hitPercentage)} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
-
-    return StatsSection(
-      title: 'Attacking',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        StatButtonRow(
-          buttons: [
-            StatButtonData(
-              label: 'Kill',
-              color: const Color(0xFF00FF88),
-              onPressed: () => _recordAttackResult('kill'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: 'In',
-              color: const Color(0xFF00E5FF),
-              onPressed: () => _recordAttackResult('in'),
-              isDisabled: _selectedPlayer == null,
-            ),
-            StatButtonData(
-              label: 'Error',
-              color: const Color(0xFFFF4444),
-              onPressed: () => _recordAttackResult('error'),
-              isDisabled: _selectedPlayer == null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  void _recordServeResult(String result) async {
-    if (_selectedPlayer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a player first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (_selectedServeType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a serve type first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final event = Event(
-        practice: widget.practice,
-        player: _selectedPlayer!,
-        team: widget.practice.team,
-        type: EventType.serve,
-        metadata: {'result': result, 'serveType': _selectedServeType!},
-        timestamp: DateTime.now(),
-      );
-
-      await _eventService.insertEvent(event);
-
-      // Add to undo stack
-      _addUndoAction(
-        UndoAction(
-          type: UndoActionType.create,
-          originalEvent: event,
-          description:
-              'Create ${event.type.displayName} by ${event.player.fullName}',
-        ),
-      );
-
-      // Update cache for the selected player
-      if (_selectedPlayer?.id != null) {
-        await _updatePlayerCache(_selectedPlayer!.id!);
-        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
-      }
-      await _loadTeamEvents();
-
-      final serveType = _selectedServeType!;
-
-      // Clear the selected serve type after recording
-      setState(() {
-        _selectedServeType = null;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Recorded $serveType serve: $result for ${_selectedPlayer!.fullName}',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: Colors.white,
-            onPressed: _undoLastAction,
-          ),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error recording serve: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _recordPassRating(String rating) async {
-    if (_selectedPlayer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a player first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final event = Event(
-        practice: widget.practice,
-        player: _selectedPlayer!,
-        team: widget.practice.team,
-        type: EventType.pass,
-        metadata: {'rating': rating},
-        timestamp: DateTime.now(),
-      );
-
-      await _eventService.insertEvent(event);
-
-      // Add to undo stack
-      _addUndoAction(
-        UndoAction(
-          type: UndoActionType.create,
-          originalEvent: event,
-          description:
-              'Create ${event.type.displayName} by ${event.player.fullName}',
-        ),
-      );
-
-      // Update cache for the selected player
-      if (_selectedPlayer?.id != null) {
-        await _updatePlayerCache(_selectedPlayer!.id!);
-        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
-      }
-      await _loadTeamEvents();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Recorded pass rating: $rating for ${_selectedPlayer!.fullName}',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: Colors.white,
-            onPressed: _undoLastAction,
-          ),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error recording pass: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _recordAttackResult(String result) async {
-    if (_selectedPlayer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a player first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final event = Event(
-        practice: widget.practice,
-        player: _selectedPlayer!,
-        team: widget.practice.team,
-        type: EventType.attack,
-        metadata: {'result': result},
-        timestamp: DateTime.now(),
-      );
-
-      await _eventService.insertEvent(event);
-
-      // Add to undo stack
-      _addUndoAction(
-        UndoAction(
-          type: UndoActionType.create,
-          originalEvent: event,
-          description:
-              'Create ${event.type.displayName} by ${event.player.fullName}',
-        ),
-      );
-
-      // Update cache for the selected player
-      if (_selectedPlayer?.id != null) {
-        await _updatePlayerCache(_selectedPlayer!.id!);
-        _playerEvents = _playerEventsCache[_selectedPlayer!.id!]!;
-      }
-      await _loadTeamEvents();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Recorded attack: $result for ${_selectedPlayer!.fullName}',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: Colors.white,
-            onPressed: _undoLastAction,
-          ),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error recording attack: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   // Aggregate stats calculation methods
   Map<String, int> _getServingStats() {
     final eventsToUse = (_selectedPlayer != null && !_isLoadingPlayerStats)
@@ -2486,5 +2000,809 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       getPlayerPassingStats: _getPlayerPassingStats,
       getPlayerAttackingStats: _getPlayerAttackingStats,
     );
+  }
+
+  Widget _buildIterativeStats() {
+    if (_selectedActionType == null) {
+      // Show action selection buttons with fixed height
+      return Container(
+        height: 120, // Reduced height without title/subtitle
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Left align buttons
+              children: [
+                // Single row layout for action buttons
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () {
+                                    setState(
+                                      () => _selectedActionType = 'serve',
+                                    );
+                                    _startCoordinateRecording('serve');
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF00E5FF),
+                              side: BorderSide(
+                                color: const Color(0xFF00E5FF),
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Serve',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: const Color(0xFF00E5FF),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () {
+                                    setState(
+                                      () => _selectedActionType = 'pass',
+                                    );
+                                    _startCoordinateRecording('pass');
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF00FF88),
+                              side: BorderSide(
+                                color: const Color(0xFF00FF88),
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Pass',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: const Color(0xFF00FF88),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () {
+                                    setState(
+                                      () => _selectedActionType = 'attack',
+                                    );
+                                    _startCoordinateRecording('attack');
+                                  },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFFF8800),
+                              side: BorderSide(
+                                color: const Color(0xFFFF8800),
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Attack',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: const Color(0xFFFF8800),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Show metadata for selected action
+      return _buildActionMetadata();
+    }
+  }
+
+  Widget _buildActionMetadata() {
+    switch (_selectedActionType) {
+      case 'serve':
+        return _buildServeMetadata();
+      case 'pass':
+        return _buildPassMetadata();
+      case 'attack':
+        return _buildAttackMetadata();
+      default:
+        return Container();
+    }
+  }
+
+  Widget _buildServeMetadata() {
+    final servingStats = _getServingStats();
+    final totalServes =
+        servingStats['float']! +
+        servingStats['hybrid']! +
+        servingStats['spin']!;
+    final subtitle =
+        '$totalServes serves | Float:${servingStats['float']} | In:${servingStats['in']} | Error:${servingStats['error']}';
+
+    return StatsSection(
+      title: 'Serving',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        // Back button and serve type selection
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() => _selectedActionType = null),
+              icon: const Icon(Icons.arrow_back, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                children: [
+                  // Serve type buttons in one row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () => setState(
+                                    () => _selectedServeType = 'float',
+                                  ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _selectedServeType == 'float'
+                                  ? const Color(0xFF00E5FF)
+                                  : Colors.grey[600],
+                              side: BorderSide(
+                                color: _selectedServeType == 'float'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[400]!,
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Float',
+                              style: TextStyle(
+                                fontWeight: _selectedServeType == 'float'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                                color: _selectedServeType == 'float'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () => setState(
+                                    () => _selectedServeType = 'hybrid',
+                                  ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _selectedServeType == 'hybrid'
+                                  ? const Color(0xFF00E5FF)
+                                  : Colors.grey[600],
+                              side: BorderSide(
+                                color: _selectedServeType == 'hybrid'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[400]!,
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Hybrid',
+                              style: TextStyle(
+                                fontWeight: _selectedServeType == 'hybrid'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                                color: _selectedServeType == 'hybrid'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            onPressed: _selectedPlayer == null
+                                ? null
+                                : () => setState(
+                                    () => _selectedServeType = 'spin',
+                                  ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _selectedServeType == 'spin'
+                                  ? const Color(0xFF00E5FF)
+                                  : Colors.grey[600],
+                              side: BorderSide(
+                                color: _selectedServeType == 'spin'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[400]!,
+                                width: 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              minimumSize: const Size(0, 24),
+                            ),
+                            child: Text(
+                              'Spin',
+                              style: TextStyle(
+                                fontWeight: _selectedServeType == 'spin'
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                                color: _selectedServeType == 'spin'
+                                    ? const Color(0xFF00E5FF)
+                                    : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Serve Results
+        StatButtonRow(
+          buttons: [
+            StatButtonData(
+              label: 'Ace',
+              color: const Color(0xFF00FF88),
+              onPressed: () => _selectServeResult('ace'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: 'In',
+              color: const Color(0xFF00E5FF),
+              onPressed: () => _selectServeResult('in'),
+              isDisabled: _selectedPlayer == null,
+            ),
+            StatButtonData(
+              label: 'Error',
+              color: const Color(0xFFFF4444),
+              onPressed: () => _selectServeResult('error'),
+              isDisabled: _selectedPlayer == null,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Save Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed:
+                _selectedPlayer == null ||
+                    _selectedActionType != 'serve' ||
+                    (_startX == null || _endX == null)
+                ? null
+                : () => _saveServeAction(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              minimumSize: const Size(0, 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Text(
+              'Save Serve',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPassMetadata() {
+    final passingStats = _getPassingStats();
+    final passingAverage = _getPassingAverage();
+    final totalPasses = passingStats.values.reduce((a, b) => a + b);
+    final subtitle =
+        '$totalPasses attempts | ${passingAverage.toStringAsFixed(2)} average | Ace:${passingStats['ace']} | 1:${passingStats['1']} | 2:${passingStats['2']} | 3:${passingStats['3']} | 0:${passingStats['0']}';
+
+    return StatsSection(
+      title: 'Passing',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        // Back button
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() => _selectedActionType = null),
+              icon: const Icon(Icons.arrow_back, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                children: [
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: 'Ace',
+                        color: const Color(0xFF00FF88),
+                        onPressed: () => _selectPassRating('ace'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                      StatButtonData(
+                        label: '3',
+                        color: const Color(0xFF00FF88),
+                        onPressed: () => _selectPassRating('3'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: '2',
+                        color: const Color(0xFF00E5FF),
+                        onPressed: () => _selectPassRating('2'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                      StatButtonData(
+                        label: '1',
+                        color: const Color(0xFFFF8800),
+                        onPressed: () => _selectPassRating('1'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: '0',
+                        color: const Color(0xFFFF4444),
+                        onPressed: () => _selectPassRating('0'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                      StatButtonData(
+                        label: '',
+                        color: Colors.grey,
+                        onPressed: null,
+                        isDisabled: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Save Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed:
+                _selectedPlayer == null ||
+                    _selectedActionType != 'pass' ||
+                    (_startX == null || _endX == null)
+                ? null
+                : () => _savePassAction(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00FF88),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              minimumSize: const Size(0, 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Text(
+              'Save Pass',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttackMetadata() {
+    final attackingStats = _getAttackingStats();
+    final totalAttacks = attackingStats.values.reduce((a, b) => a + b);
+    final hitPercentage = totalAttacks > 0
+        ? (attackingStats['kill']! - attackingStats['error']!) / totalAttacks
+        : 0.0;
+    final subtitle =
+        '$totalAttacks attacks | ${_formatHitPercentage(hitPercentage)} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
+
+    return StatsSection(
+      title: 'Attacking',
+      subtitle: subtitle,
+      isLoading: _isLoadingPlayerStats,
+      children: [
+        // Back button
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => setState(() => _selectedActionType = null),
+              icon: const Icon(Icons.arrow_back, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                children: [
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: 'Kill',
+                        color: const Color(0xFF00FF88),
+                        onPressed: () => _selectAttackResult('kill'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                      StatButtonData(
+                        label: 'In',
+                        color: const Color(0xFF00E5FF),
+                        onPressed: () => _selectAttackResult('in'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: 'Error',
+                        color: const Color(0xFFFF4444),
+                        onPressed: () => _selectAttackResult('error'),
+                        isDisabled: _selectedPlayer == null,
+                      ),
+                      StatButtonData(
+                        label: '',
+                        color: Colors.grey,
+                        onPressed: null,
+                        isDisabled: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // Save Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed:
+                _selectedPlayer == null ||
+                    _selectedActionType != 'attack' ||
+                    (_startX == null || _endX == null)
+                ? null
+                : () => _saveAttackAction(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF8800),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              minimumSize: const Size(0, 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: Text(
+              'Save Attack',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _saveServeAction() async {
+    if (_selectedPlayer == null || _startX == null || _endX == null) {
+      return;
+    }
+
+    // Get the team from the practice
+    final team = widget.practice.team;
+
+    // Create a temporary event to store the serve type
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.serve,
+      metadata: {
+        'serveType': _selectedServeType ?? 'unknown',
+        'result': _selectedServeResult ?? 'unknown',
+      },
+      timestamp: DateTime.now(),
+      fromX: _startX,
+      fromY: _startY,
+      toX: _endX,
+      toY: _endY,
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      // Reset the serve selections and coordinates
+      setState(() {
+        _selectedServeType = null;
+        _selectedServeResult = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+      });
+
+      // Refresh player stats
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Serve type saved for ${_selectedPlayer!.firstName}'),
+            backgroundColor: const Color(0xFF00E5FF),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving serve action: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving serve action: $e'),
+            backgroundColor: const Color(0xFFFF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  void _selectServeResult(String result) {
+    setState(() {
+      _selectedServeResult = result;
+    });
+  }
+
+  void _selectPassRating(String rating) {
+    setState(() {
+      _selectedPassRating = rating;
+    });
+  }
+
+  void _selectAttackResult(String result) {
+    setState(() {
+      _selectedAttackResult = result;
+    });
+  }
+
+  void _startCoordinateRecording(String action) {
+    setState(() {
+      _isRecordingCoordinates = true;
+      _recordingAction = action;
+      _hasStartPoint = false;
+      _startX = null;
+      _startY = null;
+      _endX = null;
+      _endY = null;
+    });
+  }
+
+  void _onCourtTap(double x, double y) {
+    if (!_isRecordingCoordinates) return;
+
+    setState(() {
+      if (!_hasStartPoint) {
+        // First tap - set start point
+        _startX = x;
+        _startY = y;
+        _hasStartPoint = true;
+      } else {
+        // Second tap - set end point but keep recording active to show both points
+        _endX = x;
+        _endY = y;
+        // Keep _isRecordingCoordinates = true so points remain visible
+      }
+    });
+  }
+
+  void _cancelCoordinateRecording() {
+    setState(() {
+      _isRecordingCoordinates = false;
+      _recordingAction = null;
+      _hasStartPoint = false;
+      _startX = null;
+      _startY = null;
+      _endX = null;
+      _endY = null;
+    });
+  }
+
+  void _savePassAction() async {
+    if (_selectedPlayer == null || _startX == null || _endX == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.pass,
+      metadata: {'rating': _selectedPassRating ?? 'unknown'},
+      timestamp: DateTime.now(),
+      fromX: _startX,
+      fromY: _startY,
+      toX: _endX,
+      toY: _endY,
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedPassRating = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Pass rating saved for ${_selectedPlayer!.firstName}',
+            ),
+            backgroundColor: const Color(0xFF00FF88),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving pass action: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving pass action: $e'),
+            backgroundColor: const Color(0xFFFF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveAttackAction() async {
+    if (_selectedPlayer == null || _startX == null || _endX == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.attack,
+      metadata: {'result': _selectedAttackResult ?? 'unknown'},
+      timestamp: DateTime.now(),
+      fromX: _startX,
+      fromY: _startY,
+      toX: _endX,
+      toY: _endY,
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedAttackResult = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Attack result saved for ${_selectedPlayer!.firstName}',
+            ),
+            backgroundColor: const Color(0xFFFF8800),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving attack action: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving attack action: $e'),
+            backgroundColor: const Color(0xFFFF4444),
+          ),
+        );
+      }
+    }
   }
 }

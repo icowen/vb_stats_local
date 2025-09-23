@@ -23,9 +23,9 @@ class StatButton extends StatelessWidget {
         onPressed: isDisabled ? null : onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: buttonColor,
-          side: BorderSide(color: buttonColor, width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          minimumSize: const Size(0, 32),
+          side: BorderSide(color: buttonColor, width: 1),
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          minimumSize: const Size(0, 24),
         ),
         child: Text(
           label,
