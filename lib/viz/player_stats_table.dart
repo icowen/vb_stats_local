@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'models/player.dart';
-import 'models/event.dart';
+import '../models/player.dart';
+import '../models/event.dart';
 
-class StickyTable extends StatefulWidget {
+class PlayerStatsTable extends StatefulWidget {
   final Map<String, double> columnWidths;
   final List<Player> teamPlayers;
   final List<Event> teamEvents;
@@ -10,7 +10,7 @@ class StickyTable extends StatefulWidget {
   final Function(List<Event>) getPlayerPassingStats;
   final Function(List<Event>) getPlayerAttackingStats;
 
-  const StickyTable({
+  const PlayerStatsTable({
     super.key,
     required this.columnWidths,
     required this.teamPlayers,
@@ -21,10 +21,10 @@ class StickyTable extends StatefulWidget {
   });
 
   @override
-  State<StickyTable> createState() => _StickyTableState();
+  State<PlayerStatsTable> createState() => _PlayerStatsTableState();
 }
 
-class _StickyTableState extends State<StickyTable> {
+class _PlayerStatsTableState extends State<PlayerStatsTable> {
   late ScrollController _statsScrollController;
   late ScrollController _stickyScrollController;
 

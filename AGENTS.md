@@ -2,6 +2,8 @@
 
 This is a flutter app that is used to record & analyze stats from volleyball matches and practices.
 
+Don't run bash commands - print them, wait and let me run them
+
 ## Code Style
 - Use flutter/dart for all new files
 - Prefer smaller files and reusable components

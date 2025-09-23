@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'models/practice.dart';
-import 'models/player.dart';
-import 'models/event.dart';
-import 'models/team.dart';
-import 'database_helper.dart';
-import 'team_stats_page.dart';
-import 'team_stats_table.dart';
-import 'widgets/stats_section.dart';
-import 'utils/date_utils.dart';
+import '../models/practice.dart';
+import '../models/player.dart';
+import '../models/event.dart';
+import '../models/team.dart';
+import '../database_helper.dart';
+import 'practice_analysis_page.dart';
+import '../viz/player_stats_table.dart';
+import '../widgets/stats_section.dart';
+import '../utils/date_utils.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -25,16 +25,16 @@ class UndoAction {
   });
 }
 
-class PracticeStatsPage extends StatefulWidget {
+class PracticeCollectionPage extends StatefulWidget {
   final Practice practice;
 
-  const PracticeStatsPage({super.key, required this.practice});
+  const PracticeCollectionPage({super.key, required this.practice});
 
   @override
-  State<PracticeStatsPage> createState() => _PracticeStatsPageState();
+  State<PracticeCollectionPage> createState() => _PracticeCollectionPageState();
 }
 
-class _PracticeStatsPageState extends State<PracticeStatsPage> {
+class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   List<Player> _teamPlayers = [];
   List<Player> _allPlayers = [];
@@ -391,47 +391,11 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     );
   }
 
-
   void _navigateToStatsDashboard(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => TeamStatsPage(practice: widget.practice),
+        builder: (context) => PracticeAnalysisPage(practice: widget.practice),
       ),
-    );
-  }
-
-  void _showTeamStats() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TeamStatsPage(practice: widget.practice),
-      ),
-    );
-  }
-
-  void _exportStats() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Export functionality will be implemented here.'),
-        backgroundColor: Color(0xFF00E5FF),
-      ),
-    );
-  }
-
-  void _showPracticeSettings() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Practice Settings'),
-          content: const Text('Practice configuration options will be here.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -2290,22 +2254,36 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
       );
     }
 
-    final columnWidths = TeamStatsTable.calculateColumnWidths(
-      _teamPlayers,
-      _teamEvents,
-      _getPlayerServingStats,
-      _getPlayerPassingStats,
-      _getPlayerAttackingStats,
-    );
+    // Calculate column widths (complete version matching PlayerStatsTable expectations)
+    final columnWidths = <String, double>{
+      'Player': 120.0,
+      'Jersey': 60.0,
+      'Serves': 60.0,
+      'Aces': 50.0,
+      'In': 40.0,
+      'Errors': 60.0,
+      'Float': 50.0,
+      'Hybrid': 60.0,
+      'Spin': 50.0,
+      'Passes': 60.0,
+      'Average': 70.0,
+      'Ace': 30.0, // Note: 'Ace' for passing stats, not 'Aces'
+      '0': 30.0,
+      '1': 30.0,
+      '2': 30.0,
+      '3': 30.0,
+      'Attacks': 70.0,
+      'Kills': 50.0,
+      'Hit %': 60.0,
+    };
 
-    return TeamStatsTable.buildPlayerStatsTable(
-      context,
-      columnWidths,
-      _teamPlayers,
-      _teamEvents,
-      _getPlayerServingStats,
-      _getPlayerPassingStats,
-      _getPlayerAttackingStats,
+    return PlayerStatsTable(
+      columnWidths: columnWidths,
+      teamPlayers: _teamPlayers,
+      teamEvents: _teamEvents,
+      getPlayerServingStats: _getPlayerServingStats,
+      getPlayerPassingStats: _getPlayerPassingStats,
+      getPlayerAttackingStats: _getPlayerAttackingStats,
     );
   }
 }

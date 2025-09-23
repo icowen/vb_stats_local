@@ -4,7 +4,7 @@ import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
 import 'models/practice.dart';
-import 'practice_stats_page.dart';
+import 'pages/practice_stats_page.dart';
 import 'utils/date_utils.dart';
 
 void main() {
@@ -452,7 +452,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) =>
-                                  PracticeStatsPage(practice: practice),
+                                  PracticeCollectionPage(practice: practice),
                             ),
                           );
                         },
@@ -916,7 +916,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) =>
-                              PracticeStatsPage(practice: createdPractice),
+                              PracticeCollectionPage(practice: createdPractice),
                         ),
                       );
                     }
