@@ -129,6 +129,16 @@ class AttackingBarChart extends StatelessWidget {
                   totalAttempts,
                   const Color(0xFF00E5FF),
                 ),
+                _buildTotalStat(
+                  context,
+                  'Hit %',
+                  _formatHitPercentage(
+                    totalAttempts > 0
+                        ? (totalKills - totalErrors) / totalAttempts
+                        : 0.0,
+                  ),
+                  const Color(0xFFFFFF00),
+                ),
               ],
             ),
             Expanded(
@@ -397,7 +407,7 @@ class AttackingBarChart extends StatelessWidget {
   Widget _buildTotalStat(
     BuildContext context,
     String label,
-    int value,
+    dynamic value,
     Color color,
   ) {
     return Column(
