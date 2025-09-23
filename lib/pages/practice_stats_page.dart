@@ -10,6 +10,7 @@ import '../services/team_service.dart';
 import 'practice_analysis_page.dart';
 import '../viz/player_stats_table.dart';
 import '../widgets/stats_section.dart';
+import '../widgets/volleyball_court.dart';
 import '../utils/date_utils.dart';
 
 enum UndoActionType { create, delete, update }
@@ -47,12 +48,164 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   Player? _selectedPlayer;
   bool _isLoading = true;
   List<Event> _playerEvents = [];
+
+  // Court coordinate tracking
+  bool _isRecordingCoordinates = false;
+  String? _recordingAction;
+  double? _selectedX;
+  double? _selectedY;
   List<Event> _teamEvents = [];
   String? _selectedServeType;
   bool _isLoadingPlayerStats = false;
 
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
+
+  // Court coordinate methods
+  void _onCourtTap(double x, double y) {
+    setState(() {
+      _selectedX = x;
+      _selectedY = y;
+    });
+
+    // Show action selection dialog
+    _showActionSelectionDialog(x, y);
+  }
+
+  void _startRecordingCoordinates(String action) {
+    setState(() {
+      _isRecordingCoordinates = true;
+      _recordingAction = action;
+      _selectedX = null;
+      _selectedY = null;
+    });
+  }
+
+  void _stopRecordingCoordinates() {
+    setState(() {
+      _isRecordingCoordinates = false;
+      _recordingAction = null;
+      _selectedX = null;
+      _selectedY = null;
+    });
+  }
+
+  void _showActionSelectionDialog(double x, double y) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          title: const Text(
+            'Record Action',
+            style: TextStyle(color: Color(0xFF00E5FF)),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Position: (${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)})',
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Select action type:',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildActionChip('Serve', EventType.serve),
+                  _buildActionChip('Pass', EventType.pass),
+                  _buildActionChip('Attack', EventType.attack),
+                  _buildActionChip('Block', EventType.block),
+                  _buildActionChip('Dig', EventType.dig),
+                  _buildActionChip('Set', EventType.set),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _stopRecordingCoordinates();
+              },
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActionChip(String label, EventType type) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).pop();
+        _recordActionAtCoordinates(type, _selectedX!, _selectedY!);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF00E5FF).withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF00E5FF)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF00E5FF),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _recordActionAtCoordinates(EventType type, double x, double y) async {
+    if (_selectedPlayer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a player first'),
+          backgroundColor: Color(0xFFFF4444),
+        ),
+      );
+      return;
+    }
+
+    // Create event with coordinates
+    final event = Event(
+      player: _selectedPlayer!,
+      team: widget.practice.team,
+      type: type,
+      metadata: {'result': 'unknown'}, // Default result
+      timestamp: DateTime.now(),
+      fromX: x,
+      fromY: y,
+      // toX and toY will be set when the action is completed
+    );
+
+    await _eventService.insertEvent(event);
+
+    // Add to undo stack
+    _addUndoAction(
+      UndoAction(
+        type: UndoActionType.create,
+        originalEvent: event,
+        description:
+            'Create ${event.type.displayName} at (${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)}) by ${event.player.fullName}',
+      ),
+    );
+
+    // Refresh data
+    _loadTeamEvents();
+    _loadPlayerEvents();
+    _stopRecordingCoordinates();
+  }
+
   bool _cacheInitialized = false;
 
   // Undo/Redo system
@@ -825,6 +978,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           _buildPassingStats(),
           const SizedBox(height: 8),
           _buildAttackingStats(),
+          const SizedBox(height: 16),
+          VolleyballCourt(
+            onCourtTap: _onCourtTap,
+            selectedX: _selectedX,
+            selectedY: _selectedY,
+            selectedAction: _recordingAction,
+            isRecording: _isRecordingCoordinates,
+          ),
           const SizedBox(height: 16),
           // Team Stats Table
           Text(
@@ -1733,6 +1894,32 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           onChanged: (value) => setState(() => _selectedServeType = value),
           isDisabled: _selectedPlayer == null,
         ),
+        const SizedBox(height: 8),
+        // Record Position Button
+        if (_selectedPlayer != null)
+          Container(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isRecordingCoordinates
+                  ? _stopRecordingCoordinates
+                  : () => _startRecordingCoordinates('Position'),
+              icon: Icon(
+                _isRecordingCoordinates ? Icons.stop : Icons.location_on,
+                size: 16,
+              ),
+              label: Text(
+                _isRecordingCoordinates ? 'Stop Recording' : 'Record Position',
+                style: const TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isRecordingCoordinates
+                    ? const Color(0xFFFF4444)
+                    : const Color(0xFF9C27B0),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+              ),
+            ),
+          ),
         const SizedBox(height: 8),
         // Serve Results
         StatButtonRow(

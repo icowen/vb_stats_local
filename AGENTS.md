@@ -13,3 +13,8 @@ Don't run bash commands - print them, wait and let me run them
 
 ## Architecture
 - Database models are in lib/models/
+- Pages are in lib/pages/
+- Services is API with the database in lib/services/
+- Utils are general functions used in multiple spots lib/utils/
+- Viz contains graphs/charts for analysis lib/viz/
+- Widgets are reusable generic components for consistent styling and behavior lib/widgers/ 
