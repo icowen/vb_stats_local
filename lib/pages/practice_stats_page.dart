@@ -827,6 +827,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           const SizedBox(height: 8),
           VolleyballCourt(
             onCourtTap: _onCourtTap,
+            onClear: _clearCoordinates,
             startX: _startX,
             startY: _startY,
             endX: _endX,
@@ -838,33 +839,16 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           if (_isRecordingCoordinates)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _cancelCoordinateRecording,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF4444),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                  Text(
-                    _hasStartPoint && _endX != null
-                        ? 'Ready to save - both points recorded'
-                        : _hasStartPoint
-                        ? 'Tap for end point'
-                        : 'Tap for start point',
-                    style: const TextStyle(
-                      color: Color(0xFF00E5FF),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              child: Text(
+                _hasStartPoint && _endX != null
+                    ? 'Ready to save - both points recorded'
+                    : _hasStartPoint
+                    ? 'Tap for end point'
+                    : 'Tap for start point',
+                style: const TextStyle(
+                  color: Color(0xFF00E5FF),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           const SizedBox(height: 16),
@@ -2178,118 +2162,31 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
               child: Column(
                 children: [
                   // Serve type buttons in one row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () => setState(
-                                    () => _selectedServeType = 'float',
-                                  ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _selectedServeType == 'float'
-                                  ? const Color(0xFF00E5FF)
-                                  : Colors.grey[600],
-                              side: BorderSide(
-                                color: _selectedServeType == 'float'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[400]!,
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Float',
-                              style: TextStyle(
-                                fontWeight: _selectedServeType == 'float'
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                fontSize: 11,
-                                color: _selectedServeType == 'float'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ),
+                  StatButtonRow(
+                    buttons: [
+                      StatButtonData(
+                        label: 'Float',
+                        color: const Color(0xFF00E5FF),
+                        onPressed: () =>
+                            setState(() => _selectedServeType = 'float'),
+                        isDisabled: _selectedPlayer == null,
+                        isSelected: _selectedServeType == 'float',
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () => setState(
-                                    () => _selectedServeType = 'hybrid',
-                                  ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _selectedServeType == 'hybrid'
-                                  ? const Color(0xFF00E5FF)
-                                  : Colors.grey[600],
-                              side: BorderSide(
-                                color: _selectedServeType == 'hybrid'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[400]!,
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Hybrid',
-                              style: TextStyle(
-                                fontWeight: _selectedServeType == 'hybrid'
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                fontSize: 11,
-                                color: _selectedServeType == 'hybrid'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ),
+                      StatButtonData(
+                        label: 'Hybrid',
+                        color: const Color(0xFF00E5FF),
+                        onPressed: () =>
+                            setState(() => _selectedServeType = 'hybrid'),
+                        isDisabled: _selectedPlayer == null,
+                        isSelected: _selectedServeType == 'hybrid',
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () => setState(
-                                    () => _selectedServeType = 'spin',
-                                  ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _selectedServeType == 'spin'
-                                  ? const Color(0xFF00E5FF)
-                                  : Colors.grey[600],
-                              side: BorderSide(
-                                color: _selectedServeType == 'spin'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[400]!,
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Spin',
-                              style: TextStyle(
-                                fontWeight: _selectedServeType == 'spin'
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                fontSize: 11,
-                                color: _selectedServeType == 'spin'
-                                    ? const Color(0xFF00E5FF)
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ),
+                      StatButtonData(
+                        label: 'Spin',
+                        color: const Color(0xFF00E5FF),
+                        onPressed: () =>
+                            setState(() => _selectedServeType = 'spin'),
+                        isDisabled: _selectedPlayer == null,
+                        isSelected: _selectedServeType == 'spin',
                       ),
                     ],
                   ),
@@ -2307,18 +2204,21 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
               color: const Color(0xFF00FF88),
               onPressed: () => _selectServeResult('ace'),
               isDisabled: _selectedPlayer == null,
+              isSelected: _selectedServeResult == 'ace',
             ),
             StatButtonData(
               label: 'In',
               color: const Color(0xFF00E5FF),
               onPressed: () => _selectServeResult('in'),
               isDisabled: _selectedPlayer == null,
+              isSelected: _selectedServeResult == 'in',
             ),
             StatButtonData(
               label: 'Error',
               color: const Color(0xFFFF4444),
               onPressed: () => _selectServeResult('error'),
               isDisabled: _selectedPlayer == null,
+              isSelected: _selectedServeResult == 'error',
             ),
           ],
         ),
@@ -2335,7 +2235,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                 : () => _saveServeAction(),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 8),
               minimumSize: const Size(0, 32),
               shape: RoundedRectangleBorder(
@@ -2445,7 +2345,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                 : () => _savePassAction(),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00FF88),
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 8),
               minimumSize: const Size(0, 32),
               shape: RoundedRectangleBorder(
@@ -2540,7 +2440,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                 : () => _saveAttackAction(),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF8800),
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 8),
               minimumSize: const Size(0, 32),
               shape: RoundedRectangleBorder(
@@ -2589,6 +2489,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Reset the serve selections and coordinates
       setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
         _selectedServeType = null;
         _selectedServeResult = null;
         _isRecordingCoordinates = false;
@@ -2672,10 +2574,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     });
   }
 
-  void _cancelCoordinateRecording() {
+  void _clearCoordinates() {
     setState(() {
-      _isRecordingCoordinates = false;
-      _recordingAction = null;
       _hasStartPoint = false;
       _startX = null;
       _startY = null;
@@ -2710,6 +2610,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       await _eventService.insertEvent(tempEvent);
 
       setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
         _selectedPassRating = null;
         _isRecordingCoordinates = false;
         _recordingAction = null;
@@ -2771,6 +2673,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       await _eventService.insertEvent(tempEvent);
 
       setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
         _selectedAttackResult = null;
         _isRecordingCoordinates = false;
         _recordingAction = null;

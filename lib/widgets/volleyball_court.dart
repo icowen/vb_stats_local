@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class VolleyballCourt extends StatefulWidget {
   final Function(double x, double y)? onCourtTap;
+  final VoidCallback? onClear;
   final double? startX;
   final double? startY;
   final double? endX;
@@ -13,6 +14,7 @@ class VolleyballCourt extends StatefulWidget {
   const VolleyballCourt({
     super.key,
     this.onCourtTap,
+    this.onClear,
     this.startX,
     this.startY,
     this.endX,
@@ -57,18 +59,20 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                           details.globalPosition,
                         );
 
-                        // Convert to court coordinates (0-480 for X, 0-240 for Y)
-                        // Calculate court position within the widget
-                        final courtOffsetX = (renderBox.size.width - 480) / 2;
-                        final courtOffsetY = (renderBox.size.height - 240) / 2;
-
-                        // Convert to court coordinates (0-480 range for X, 0-240 range for Y)
+                        // Convert to court coordinates in feet
+                        // Inner court is 480x240 pixels, positioned at (90, 45) within outer border
+                        // Court is 60 feet wide (X) and 30 feet tall (Y)
+                        // Net is at X=60 feet (right side of court)
+                        // Top left of inner court is (0,0), bottom left is (0,30)
+                        // Areas outside court can have negative coordinates
+                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
                         final x =
-                            ((localPosition.dx - courtOffsetX) / 480 * 480)
-                                .clamp(0.0, 480.0);
+                            ((localPosition.dx - courtOffsetX) / 480.0) *
+                            60.0; // 480 pixels = 60 feet
                         final y =
-                            ((localPosition.dy - courtOffsetY) / 240 * 240)
-                                .clamp(0.0, 240.0);
+                            ((localPosition.dy - courtOffsetY) / 240.0) *
+                            30.0; // 240 pixels = 30 feet
 
                         widget.onCourtTap!(x, y);
                       }
@@ -88,6 +92,35 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                       ),
                     ),
                   ),
+                  // Clear button in top left
+                  if (widget.isRecording &&
+                      (widget.hasStartPoint || widget.endX != null))
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: GestureDetector(
+                        onTap: widget.onClear,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.red, width: 1),
+                          ),
+                          child: const Text(
+                            'Clear',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   // Coordinates overlay in top right
                   if (widget.hasStartPoint || widget.endX != null)
                     Positioned(
@@ -111,7 +144,7 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                           children: [
                             if (widget.hasStartPoint)
                               Text(
-                                'Start: (${widget.startX?.toStringAsFixed(1) ?? '?'}, ${widget.startY?.toStringAsFixed(1) ?? '?'})',
+                                'Start: (${widget.startX?.toStringAsFixed(1) ?? '?'}ft, ${widget.startY?.toStringAsFixed(1) ?? '?'}ft)',
                                 style: const TextStyle(
                                   color: Color(0xFF00FF88),
                                   fontWeight: FontWeight.w500,
@@ -122,7 +155,7 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                               const SizedBox(width: 8),
                             if (widget.endX != null)
                               Text(
-                                'End: (${widget.endX?.toStringAsFixed(1) ?? '?'}, ${widget.endY?.toStringAsFixed(1) ?? '?'})',
+                                'End: (${widget.endX?.toStringAsFixed(1) ?? '?'}ft, ${widget.endY?.toStringAsFixed(1) ?? '?'}ft)',
                                 style: const TextStyle(
                                   color: Color(0xFF00E5FF),
                                   fontWeight: FontWeight.w500,
@@ -274,8 +307,14 @@ class VolleyballCourtPainter extends CustomPainter {
     if (isRecording) {
       // Draw start point if available
       if (hasStartPoint && startX != null && startY != null) {
-        final startXPos = courtOffsetX + (startX! / 480) * courtSize;
-        final startYPos = courtOffsetY + (startY! / 240) * courtHeight;
+        final courtOffsetX = (size.width - 480) / 2; // 90 pixels
+        final courtOffsetY = (size.height - 240) / 2; // 45 pixels
+        final startXPos =
+            courtOffsetX +
+            (startX! / 60.0) * 480; // Convert feet to pixels within inner court
+        final startYPos =
+            courtOffsetY +
+            (startY! / 30.0) * 240; // Convert feet to pixels within inner court
 
         // Draw start point (green)
         canvas.drawCircle(
@@ -298,8 +337,14 @@ class VolleyballCourtPainter extends CustomPainter {
 
       // Draw end point if available
       if (endX != null && endY != null) {
-        final endXPos = courtOffsetX + (endX! / 480) * courtSize;
-        final endYPos = courtOffsetY + (endY! / 240) * courtHeight;
+        final courtOffsetX = (size.width - 480) / 2; // 90 pixels
+        final courtOffsetY = (size.height - 240) / 2; // 45 pixels
+        final endXPos =
+            courtOffsetX +
+            (endX! / 60.0) * 480; // Convert feet to pixels within inner court
+        final endYPos =
+            courtOffsetY +
+            (endY! / 30.0) * 240; // Convert feet to pixels within inner court
 
         // Draw end point (blue)
         canvas.drawCircle(
@@ -321,8 +366,16 @@ class VolleyballCourtPainter extends CustomPainter {
 
         // Draw line between start and end points
         if (hasStartPoint && startX != null && startY != null) {
-          final startXPos = courtOffsetX + (startX! / 480) * courtSize;
-          final startYPos = courtOffsetY + (startY! / 240) * courtHeight;
+          final courtOffsetX = (size.width - 480) / 2; // 90 pixels
+          final courtOffsetY = (size.height - 240) / 2; // 45 pixels
+          final startXPos =
+              courtOffsetX +
+              (startX! / 60.0) *
+                  480; // Convert feet to pixels within inner court
+          final startYPos =
+              courtOffsetY +
+              (startY! / 30.0) *
+                  240; // Convert feet to pixels within inner court
 
           canvas.drawLine(
             Offset(startXPos, startYPos),

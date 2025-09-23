@@ -156,6 +156,7 @@ class StatButtonRow extends StatelessWidget {
                 color: button.color,
                 onPressed: button.onPressed,
                 isDisabled: button.isDisabled,
+                isSelected: button.isSelected,
               ),
               if (index < buttons.length - 1) const SizedBox(width: 2),
             ];
@@ -171,12 +172,14 @@ class StatButtonData {
   final Color color;
   final VoidCallback? onPressed;
   final bool isDisabled;
+  final bool isSelected;
 
   StatButtonData({
     required this.label,
     required this.color,
     this.onPressed,
     this.isDisabled = false,
+    this.isSelected = false,
   });
 }
 
