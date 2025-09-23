@@ -132,9 +132,9 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
               tooltip: 'Undo ${_undoStack.last.description}',
             ),
           IconButton(
-            onPressed: () => _showStatsOptions(context),
+            onPressed: () => _navigateToStatsDashboard(context),
             icon: const Icon(Icons.analytics),
-            tooltip: 'Stats Options',
+            tooltip: 'View Team Stats',
           ),
         ],
       ),
@@ -391,49 +391,12 @@ class _PracticeStatsPageState extends State<PracticeStatsPage> {
     );
   }
 
-  void _showStatsOptions(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Stats Options'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.analytics, color: Color(0xFF00E5FF)),
-                title: const Text('View Team Stats'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _showTeamStats();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.download, color: Color(0xFF00FF88)),
-                title: const Text('Export Stats'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _exportStats();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings, color: Colors.grey),
-                title: const Text('Practice Settings'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _showPracticeSettings();
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
+
+  void _navigateToStatsDashboard(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TeamStatsPage(practice: widget.practice),
+      ),
     );
   }
 
