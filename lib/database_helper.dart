@@ -18,7 +18,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'vb_stats.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -114,6 +114,10 @@ class DatabaseHelper {
             type TEXT NOT NULL,
             metadata TEXT,
             timestamp INTEGER NOT NULL,
+            fromX REAL,
+            fromY REAL,
+            toX REAL,
+            toY REAL,
             FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
             FOREIGN KEY (matchId) REFERENCES matches (id) ON DELETE CASCADE,
             FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE,
@@ -229,6 +233,10 @@ class DatabaseHelper {
         type TEXT NOT NULL,
         metadata TEXT,
         timestamp INTEGER NOT NULL,
+        fromX REAL,
+        fromY REAL,
+        toX REAL,
+        toY REAL,
         FOREIGN KEY (practiceId) REFERENCES practices (id) ON DELETE CASCADE,
         FOREIGN KEY (matchId) REFERENCES matches (id) ON DELETE CASCADE,
         FOREIGN KEY (playerId) REFERENCES players (id) ON DELETE CASCADE,
@@ -244,6 +252,13 @@ class DatabaseHelper {
       await db.execute('''
         CREATE INDEX IF NOT EXISTS idx_players_teamId ON players(teamId)
       ''');
+    }
+    if (oldVersion < 3) {
+      // Add coordinate columns to events table
+      await db.execute('ALTER TABLE events ADD COLUMN fromX REAL');
+      await db.execute('ALTER TABLE events ADD COLUMN fromY REAL');
+      await db.execute('ALTER TABLE events ADD COLUMN toX REAL');
+      await db.execute('ALTER TABLE events ADD COLUMN toY REAL');
     }
   }
 

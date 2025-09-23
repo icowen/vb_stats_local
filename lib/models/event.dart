@@ -12,6 +12,10 @@ class Event {
   final EventType type;
   final Map<String, dynamic> metadata;
   final DateTime timestamp;
+  final double? fromX;
+  final double? fromY;
+  final double? toX;
+  final double? toY;
 
   Event({
     this.id,
@@ -22,6 +26,10 @@ class Event {
     required this.type,
     required this.metadata,
     required this.timestamp,
+    this.fromX,
+    this.fromY,
+    this.toX,
+    this.toY,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +42,10 @@ class Event {
       'type': type.name,
       'metadata': _mapToString(metadata),
       'timestamp': timestamp.millisecondsSinceEpoch,
+      'fromX': fromX,
+      'fromY': fromY,
+      'toX': toX,
+      'toY': toY,
     };
   }
 
@@ -56,6 +68,10 @@ class Event {
       ),
       metadata: _stringToMap(map['metadata']),
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
+      fromX: map['fromX']?.toDouble(),
+      fromY: map['fromY']?.toDouble(),
+      toX: map['toX']?.toDouble(),
+      toY: map['toY']?.toDouble(),
     );
   }
 
@@ -85,6 +101,22 @@ class Event {
   bool get isPractice => practice != null;
   bool get isMatch => match != null;
 
+  // Coordinate convenience methods
+  bool get hasFromCoordinates => fromX != null && fromY != null;
+  bool get hasToCoordinates => toX != null && toY != null;
+  bool get hasCoordinates => hasFromCoordinates || hasToCoordinates;
+
+  String get coordinateInfo {
+    if (!hasCoordinates) return 'No coordinates';
+    final from = hasFromCoordinates
+        ? '(${fromX!.toStringAsFixed(1)}, ${fromY!.toStringAsFixed(1)})'
+        : 'Unknown';
+    final to = hasToCoordinates
+        ? '(${toX!.toStringAsFixed(1)}, ${toY!.toStringAsFixed(1)})'
+        : 'Unknown';
+    return 'From: $from → To: $to';
+  }
+
   Event copyWith({
     int? id,
     Practice? practice,
@@ -94,6 +126,10 @@ class Event {
     EventType? type,
     Map<String, dynamic>? metadata,
     DateTime? timestamp,
+    double? fromX,
+    double? fromY,
+    double? toX,
+    double? toY,
   }) {
     return Event(
       id: id ?? this.id,
@@ -104,12 +140,16 @@ class Event {
       type: type ?? this.type,
       metadata: metadata ?? this.metadata,
       timestamp: timestamp ?? this.timestamp,
+      fromX: fromX ?? this.fromX,
+      fromY: fromY ?? this.fromY,
+      toX: toX ?? this.toX,
+      toY: toY ?? this.toY,
     );
   }
 
   @override
   String toString() {
-    return 'Event{id: $id, type: ${type.name}, player: ${player.fullName}, team: ${team.teamName}, metadata: $metadata, timestamp: $timestamp}';
+    return 'Event{id: $id, type: ${type.name}, player: ${player.fullName}, team: ${team.teamName}, metadata: $metadata, timestamp: $timestamp, fromX: $fromX, fromY: $fromY, toX: $toX, toY: $toY}';
   }
 
   @override
@@ -123,7 +163,11 @@ class Event {
         other.team == team &&
         other.type == type &&
         other.metadata.toString() == metadata.toString() &&
-        other.timestamp == timestamp;
+        other.timestamp == timestamp &&
+        other.fromX == fromX &&
+        other.fromY == fromY &&
+        other.toX == toX &&
+        other.toY == toY;
   }
 
   @override
@@ -135,7 +179,11 @@ class Event {
         team.hashCode ^
         type.hashCode ^
         metadata.hashCode ^
-        timestamp.hashCode;
+        timestamp.hashCode ^
+        fromX.hashCode ^
+        fromY.hashCode ^
+        toX.hashCode ^
+        toY.hashCode;
   }
 }
 
