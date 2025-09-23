@@ -4,6 +4,8 @@ import '../models/practice.dart';
 import '../models/player.dart';
 import '../models/event.dart';
 import '../database_helper.dart';
+import '../services/player_service.dart';
+import '../services/event_service.dart';
 import '../viz/passing_histogram.dart';
 import '../viz/serving_pie_chart.dart';
 import '../viz/attacking_bar_chart.dart';
@@ -20,6 +22,8 @@ class PracticeAnalysisPage extends StatefulWidget {
 
 class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final PlayerService _playerService = PlayerService();
+  final EventService _eventService = EventService();
   List<Player> _practicePlayers = [];
   List<Event> _teamEvents = [];
   bool _isLoading = true;
@@ -41,10 +45,10 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   Future<void> _loadTeamStats() async {
     try {
       await _dbHelper.ensureTablesExist();
-      final practicePlayers = await _dbHelper.getPracticePlayers(
+      final practicePlayers = await _playerService.getPracticePlayers(
         widget.practice.id!,
       );
-      final teamEvents = await _dbHelper.getEventsForPractice(
+      final teamEvents = await _eventService.getEventsForPractice(
         widget.practice.id!,
       );
 
@@ -411,7 +415,6 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       getPlayerAttackingStats: _getPlayerAttackingStats,
     );
   }
-
 
   Map<String, dynamic> _calculateHighlights() {
     Player? bestPasser;

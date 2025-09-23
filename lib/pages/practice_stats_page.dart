@@ -4,6 +4,9 @@ import '../models/player.dart';
 import '../models/event.dart';
 import '../models/team.dart';
 import '../database_helper.dart';
+import '../services/player_service.dart';
+import '../services/event_service.dart';
+import '../services/team_service.dart';
 import 'practice_analysis_page.dart';
 import '../viz/player_stats_table.dart';
 import '../widgets/stats_section.dart';
@@ -36,6 +39,9 @@ class PracticeCollectionPage extends StatefulWidget {
 
 class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final PlayerService _playerService = PlayerService();
+  final EventService _eventService = EventService();
+  final TeamService _teamService = TeamService();
   List<Player> _teamPlayers = [];
   List<Player> _allPlayers = [];
   Player? _selectedPlayer;
@@ -86,11 +92,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   Future<void> _loadTeamPlayers() async {
     try {
-      final practicePlayers = await _dbHelper.getPracticePlayers(
+      final practicePlayers = await _playerService.getPracticePlayers(
         widget.practice.id!,
       );
-      final allPlayers = await _dbHelper.getAllPlayers();
-      final teamEvents = await _dbHelper.getEventsForPractice(
+      final allPlayers = await _playerService.getAllPlayers();
+      final teamEvents = await _eventService.getEventsForPractice(
         widget.practice.id!,
       );
 
@@ -406,7 +412,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Pre-load events for all team players
       for (final player in _teamPlayers) {
         if (player.id != null) {
-          final events = await _dbHelper.getEventsForPlayer(player.id!);
+          final events = await _eventService.getEventsForPlayer(player.id!);
           _playerEventsCache[player.id!] = events;
         }
       }
@@ -453,7 +459,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedPlayer == null) return;
 
     try {
-      final events = await _dbHelper.getEventsForPlayer(_selectedPlayer!.id!);
+      final events = await _eventService.getEventsForPlayer(
+        _selectedPlayer!.id!,
+      );
       _playerEvents = events;
 
       // Update cache
@@ -468,7 +476,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   Future<void> _updatePlayerCache(int playerId) async {
     try {
-      final events = await _dbHelper.getEventsForPlayer(playerId);
+      final events = await _eventService.getEventsForPlayer(playerId);
       _playerEventsCache[playerId] = events;
     } catch (e) {
       print('Error updating player cache for player $playerId: $e');
@@ -477,7 +485,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   Future<void> _loadTeamEvents() async {
     try {
-      final events = await _dbHelper.getEventsForPractice(widget.practice.id!);
+      final events = await _eventService.getEventsForPractice(
+        widget.practice.id!,
+      );
       setState(() {
         _teamEvents = events;
       });
@@ -517,7 +527,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                       : () async {
                           try {
                             // Add player to practice in database
-                            await _dbHelper.addPlayerToPractice(
+                            await _playerService.addPlayerToPractice(
                               widget.practice.id!,
                               player.id!,
                             );
@@ -602,7 +612,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       context: context,
       builder: (BuildContext context) {
         return FutureBuilder<List<Team>>(
-          future: _dbHelper.getAllTeams(),
+          future: _teamService.getAllTeams(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const AlertDialog(
@@ -659,7 +669,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                       onTap: () async {
                         try {
                           // Get all players from the team using the new teamId field
-                          final allPlayers = await _dbHelper.getAllPlayers();
+                          final allPlayers = await _playerService
+                              .getAllPlayers();
                           final teamPlayers = allPlayers
                               .where((player) => player.teamId == team.id)
                               .toList();
@@ -697,7 +708,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             print(
                               'Adding player ${player.fullName} to practice',
                             );
-                            await _dbHelper.addPlayerToPractice(
+                            await _playerService.addPlayerToPractice(
                               widget.practice.id!,
                               player.id!,
                             );
@@ -763,7 +774,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   void _removePlayerFromPractice(Player player) async {
     try {
       // Remove player from practice in database
-      await _dbHelper.removePlayerFromPractice(widget.practice.id!, player.id!);
+      await _playerService.removePlayerFromPractice(
+        widget.practice.id!,
+        player.id!,
+      );
 
       // Update local state
       setState(() {
@@ -1410,7 +1424,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       );
 
       // Update in database
-      await _dbHelper.updateEvent(updatedEvent);
+      await _eventService.updateEvent(updatedEvent);
 
       // Update local state
       setState(() {
@@ -1492,7 +1506,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.create:
           // Undo creation by deleting the event
           if (action.originalEvent != null) {
-            await _dbHelper.deleteEvent(action.originalEvent!.id!);
+            await _eventService.deleteEvent(action.originalEvent!.id!);
             setState(() {
               _teamEvents.removeWhere((e) => e.id == action.originalEvent!.id);
               if (_selectedPlayer != null) {
@@ -1507,7 +1521,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.delete:
           // Undo deletion by recreating the event
           if (action.originalEvent != null) {
-            await _dbHelper.insertEvent(action.originalEvent!);
+            await _eventService.insertEvent(action.originalEvent!);
             setState(() {
               _teamEvents.add(action.originalEvent!);
               if (_selectedPlayer != null &&
@@ -1521,7 +1535,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.update:
           // Undo update by reverting to original event
           if (action.originalEvent != null) {
-            await _dbHelper.updateEvent(action.originalEvent!);
+            await _eventService.updateEvent(action.originalEvent!);
             setState(() {
               final teamIndex = _teamEvents.indexWhere(
                 (e) => e.id == action.originalEvent!.id,
@@ -1580,7 +1594,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.create:
           // Redo creation by recreating the event
           if (action.originalEvent != null) {
-            await _dbHelper.insertEvent(action.originalEvent!);
+            await _eventService.insertEvent(action.originalEvent!);
             setState(() {
               _teamEvents.add(action.originalEvent!);
               if (_selectedPlayer != null &&
@@ -1594,7 +1608,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.delete:
           // Redo deletion by deleting the event
           if (action.originalEvent != null) {
-            await _dbHelper.deleteEvent(action.originalEvent!.id!);
+            await _eventService.deleteEvent(action.originalEvent!.id!);
             setState(() {
               _teamEvents.removeWhere((e) => e.id == action.originalEvent!.id);
               if (_selectedPlayer != null) {
@@ -1609,7 +1623,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         case UndoActionType.update:
           // Redo update by applying the updated event
           if (action.updatedEvent != null) {
-            await _dbHelper.updateEvent(action.updatedEvent!);
+            await _eventService.updateEvent(action.updatedEvent!);
             setState(() {
               final teamIndex = _teamEvents.indexWhere(
                 (e) => e.id == action.updatedEvent!.id,
@@ -1653,7 +1667,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   Future<void> _deleteEvent(Event event) async {
     try {
-      await _dbHelper.deleteEvent(event.id!);
+      await _eventService.deleteEvent(event.id!);
 
       // Add to undo stack
       _addUndoAction(
@@ -1868,7 +1882,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         timestamp: DateTime.now(),
       );
 
-      await _dbHelper.insertEvent(event);
+      await _eventService.insertEvent(event);
 
       // Add to undo stack
       _addUndoAction(
@@ -1937,7 +1951,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         timestamp: DateTime.now(),
       );
 
-      await _dbHelper.insertEvent(event);
+      await _eventService.insertEvent(event);
 
       // Add to undo stack
       _addUndoAction(
@@ -1999,7 +2013,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         timestamp: DateTime.now(),
       );
 
-      await _dbHelper.insertEvent(event);
+      await _eventService.insertEvent(event);
 
       // Add to undo stack
       _addUndoAction(

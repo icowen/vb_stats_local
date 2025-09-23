@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
+import 'services/player_service.dart';
+import 'services/team_service.dart';
+import 'services/match_service.dart';
+import 'services/practice_service.dart';
 import 'models/player.dart';
 import 'models/team.dart';
 import 'models/match.dart';
@@ -81,6 +85,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final PlayerService _playerService = PlayerService();
+  final TeamService _teamService = TeamService();
+  final MatchService _matchService = MatchService();
+  final PracticeService _practiceService = PracticeService();
   List<Player> _players = [];
   List<Team> _teams = [];
   List<Match> _matches = [];
@@ -115,10 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
       // Ensure database is initialized before loading data
       await _dbHelper.database;
 
-      final players = await _dbHelper.getAllPlayers();
-      final teams = await _dbHelper.getAllTeams();
-      final matches = await _dbHelper.getAllMatches();
-      final practices = await _dbHelper.getAllPractices();
+      final players = await _playerService.getAllPlayers();
+      final teams = await _teamService.getAllTeams();
+      final matches = await _matchService.getAllMatches();
+      final practices = await _practiceService.getAllPractices();
 
       setState(() {
         _players = players;
@@ -554,7 +562,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         jerseyNumber: jerseyNumber,
                         teamId: selectedTeam?.id,
                       );
-                      await _dbHelper.insertPlayer(player);
+                      await _playerService.insertPlayer(player);
                       _loadData();
                       Navigator.of(context).pop();
                     }
@@ -627,7 +635,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     clubName: clubNameController.text,
                     age: int.parse(ageController.text),
                   );
-                  await _dbHelper.insertTeam(team);
+                  await _teamService.insertTeam(team);
                   _loadData();
                   Navigator.of(context).pop();
                 }
@@ -762,7 +770,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         awayTeam: selectedAwayTeam!,
                         startTime: startTime,
                       );
-                      await _dbHelper.insertMatch(match);
+                      await _matchService.insertMatch(match);
                       _loadData();
                       Navigator.of(context).pop();
                     }
@@ -879,7 +887,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         team: selectedTeam!,
                         date: selectedDate,
                       );
-                      final practiceId = await _dbHelper.insertPractice(
+                      final practiceId = await _practiceService.insertPractice(
                         practice,
                       );
 
@@ -896,7 +904,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         print(
                           'Adding player ${player.fullName} to practice $practiceId',
                         );
-                        await _dbHelper.addPlayerToPractice(
+                        await _playerService.addPlayerToPractice(
                           practiceId,
                           player.id!,
                         );
@@ -1028,7 +1036,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         jerseyNumber: jerseyNumber,
                         teamId: selectedTeam?.id,
                       );
-                      await _dbHelper.updatePlayer(updatedPlayer);
+                      await _playerService.updatePlayer(updatedPlayer);
                       _loadData();
                       Navigator.of(context).pop();
                     }
@@ -1049,7 +1057,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final ageController = TextEditingController(text: team.age.toString());
 
     // Load current team players
-    final allPlayers = await _dbHelper.getAllPlayers();
+    final allPlayers = await _playerService.getAllPlayers();
     final currentTeamPlayers = allPlayers
         .where((player) => player.teamId == team.id)
         .toList();
@@ -1163,7 +1171,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         jerseyNumber: player.jerseyNumber,
                                         teamId: null,
                                       );
-                                      await _dbHelper.updatePlayer(
+                                      await _playerService.updatePlayer(
                                         updatedPlayer,
                                       );
                                       _loadData(); // Refresh main data
@@ -1194,7 +1202,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         clubName: clubNameController.text,
                         age: int.parse(ageController.text),
                       );
-                      await _dbHelper.updateTeam(updatedTeam);
+                      await _teamService.updateTeam(updatedTeam);
                       _loadData();
                       Navigator.of(context).pop();
                     }
@@ -1214,7 +1222,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Team team,
     StateSetter setState,
   ) async {
-    final allPlayers = await _dbHelper.getAllPlayers();
+    final allPlayers = await _playerService.getAllPlayers();
     final availablePlayers = allPlayers
         .where((player) => player.teamId == null || player.teamId == team.id)
         .toList();
@@ -1323,7 +1331,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               jerseyNumber: player.jerseyNumber,
                               teamId: team.id,
                             );
-                            await _dbHelper.updatePlayer(updatedPlayer);
+                            await _playerService.updatePlayer(updatedPlayer);
                           }
                           _loadData(); // Refresh main data
                           setState(() {}); // Refresh modal state
