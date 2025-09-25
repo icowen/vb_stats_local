@@ -9,7 +9,6 @@ import '../services/event_service.dart';
 import '../services/team_service.dart';
 import 'practice_analysis_page.dart';
 import '../viz/player_stats_table.dart';
-import '../widgets/stats_section.dart';
 import '../widgets/volleyball_court.dart';
 import '../utils/date_utils.dart';
 
@@ -77,14 +76,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   // Undo/Redo system
   List<UndoAction> _undoStack = [];
   List<UndoAction> _redoStack = [];
-
-  String _formatHitPercentage(double hitPercentage) {
-    if (hitPercentage >= 1.0) {
-      return '1.000';
-    } else {
-      return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
-    }
-  }
 
   static const int maxUndoActions = 20;
 
@@ -830,8 +821,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Iterative Stats Collection
-          _buildIterativeStats(),
+          // All Actions Collection
+          _buildAllActionsTile(),
           const SizedBox(height: 8),
           VolleyballCourt(
             onCourtTap: _onCourtTap,
@@ -1747,112 +1738,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
-  // Aggregate stats calculation methods
-  Map<String, int> _getServingStats() {
-    final eventsToUse = (_selectedPlayer != null && !_isLoadingPlayerStats)
-        ? _playerEvents
-        : _teamEvents;
-    final serveEvents = eventsToUse
-        .where((e) => e.type == EventType.serve)
-        .toList();
-    final stats = <String, int>{
-      'float': 0,
-      'hybrid': 0,
-      'spin': 0,
-      'ace': 0,
-      'in': 0,
-      'error': 0,
-    };
-
-    for (final event in serveEvents) {
-      final result = event.metadata['result'] as String?;
-      final serveType = event.metadata['serveType'] as String?;
-
-      if (serveType != null) {
-        stats[serveType] = (stats[serveType] ?? 0) + 1;
-      }
-      if (result != null) {
-        stats[result] = (stats[result] ?? 0) + 1;
-      }
-    }
-
-    return stats;
-  }
-
-  Map<String, int> _getPassingStats() {
-    final eventsToUse = (_selectedPlayer != null && !_isLoadingPlayerStats)
-        ? _playerEvents
-        : _teamEvents;
-    final passEvents = eventsToUse
-        .where((e) => e.type == EventType.pass)
-        .toList();
-    final stats = <String, int>{'ace': 0, '0': 0, '1': 0, '2': 0, '3': 0};
-
-    for (final event in passEvents) {
-      final rating = event.metadata['rating'] as String?;
-      if (rating != null) {
-        stats[rating] = (stats[rating] ?? 0) + 1;
-      }
-    }
-
-    return stats;
-  }
-
-  Map<String, int> _getAttackingStats() {
-    final eventsToUse = (_selectedPlayer != null && !_isLoadingPlayerStats)
-        ? _playerEvents
-        : _teamEvents;
-    final attackEvents = eventsToUse
-        .where((e) => e.type == EventType.attack)
-        .toList();
-    final stats = <String, int>{'kill': 0, 'in': 0, 'error': 0};
-
-    for (final event in attackEvents) {
-      final result = event.metadata['result'] as String?;
-      if (result != null) {
-        stats[result] = (stats[result] ?? 0) + 1;
-      }
-    }
-
-    return stats;
-  }
-
-  double _getPassingAverage() {
-    final eventsToUse = (_selectedPlayer != null && !_isLoadingPlayerStats)
-        ? _playerEvents
-        : _teamEvents;
-    final passEvents = eventsToUse
-        .where((e) => e.type == EventType.pass)
-        .toList();
-    if (passEvents.isEmpty) return 0.0;
-
-    int totalPoints = 0;
-    for (final event in passEvents) {
-      final rating = event.metadata['rating'] as String?;
-      if (rating != null) {
-        switch (rating) {
-          case 'ace':
-            totalPoints += 0; // ACE is worth 0 points
-            break;
-          case '3':
-            totalPoints += 3;
-            break;
-          case '2':
-            totalPoints += 2;
-            break;
-          case '1':
-            totalPoints += 1;
-            break;
-          case '0':
-            totalPoints += 0;
-            break;
-        }
-      }
-    }
-
-    return totalPoints / passEvents.length;
-  }
-
   // Stats calculation methods (copied from team stats page)
   Map<String, int> _getPlayerServingStats(List<Event> playerEvents) {
     final serveEvents = playerEvents
@@ -1994,466 +1879,392 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     );
   }
 
-  Widget _buildIterativeStats() {
-    if (_selectedActionType == null) {
-      // Show action selection buttons with fixed height
-      return Container(
-        height: 120, // Reduced height without title/subtitle
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start, // Left align buttons
+  Widget _buildAllActionsTile() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Column(
+          children: [
+            Row(
               children: [
-                // Single row layout for action buttons
+                // Serve Column
                 Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _selectedActionType = 'serve';
-                                      // Reset all metadata selections
-                                      _selectedServeType = null;
-                                      _selectedServeResult = null;
-                                      _selectedPassRating = null;
-                                      _selectedAttackResult = null;
-                                    });
-                                    _startCoordinateRecording('serve');
-                                  },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF00E5FF),
-                              backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: const Color(0xFF00E5FF),
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 8,
-                              ),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Serve',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFF00E5FF),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Serve Title
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: const Text(
+                              'SERVE',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
+                                color: Color(0xFF00E5FF),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
-                                color: const Color(0xFF00E5FF),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          // Serve Types
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Float',
+                                  const Color(0xFF00E5FF),
+                                  () => _selectServeType('float'),
+                                  _selectedServeType == 'float',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Hybrid',
+                                  const Color(0xFF00E5FF),
+                                  () => _selectServeType('hybrid'),
+                                  _selectedServeType == 'hybrid',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Spin',
+                                  const Color(0xFF00E5FF),
+                                  () => _selectServeType('spin'),
+                                  _selectedServeType == 'spin',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          // Serve Results
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Ace',
+                                  const Color(0xFF00FF88),
+                                  () => _selectServeResult('ace'),
+                                  _selectedServeResult == 'ace',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'In',
+                                  const Color(0xFF00FF88),
+                                  () => _selectServeResult('in'),
+                                  _selectedServeResult == 'in',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Error',
+                                  const Color(0xFFFF4444),
+                                  () => _selectServeResult('error'),
+                                  _selectedServeResult == 'error',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _selectedActionType = 'pass';
-                                      // Reset all metadata selections
-                                      _selectedServeType = null;
-                                      _selectedServeResult = null;
-                                      _selectedPassRating = null;
-                                      _selectedAttackResult = null;
-                                    });
-                                    _startCoordinateRecording('pass');
-                                  },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF00FF88),
-                              backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: const Color(0xFF00FF88),
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 8,
-                              ),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Pass',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 4),
+
+                // Pass Column
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFF00FF88),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Pass Title
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: const Text(
+                              'PASS',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
+                                color: Color(0xFF00FF88),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
-                                color: const Color(0xFF00FF88),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          // Pass Ratings
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Ace',
+                                  const Color(0xFF00FF88),
+                                  () => _selectPassRating('ace'),
+                                  _selectedPassRating == 'ace',
+                                ),
+                              ),
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  '3',
+                                  const Color(0xFF00FF88),
+                                  () => _selectPassRating('3'),
+                                  _selectedPassRating == '3',
+                                ),
+                              ),
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  '2',
+                                  const Color(0xFF00E5FF),
+                                  () => _selectPassRating('2'),
+                                  _selectedPassRating == '2',
+                                ),
+                              ),
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  '1',
+                                  const Color(0xFFFF8800),
+                                  () => _selectPassRating('1'),
+                                  _selectedPassRating == '1',
+                                ),
+                              ),
+                              const SizedBox(width: 1),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  '0',
+                                  const Color(0xFFFF4444),
+                                  () => _selectPassRating('0'),
+                                  _selectedPassRating == '0',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: OutlinedButton(
-                            onPressed: _selectedPlayer == null
-                                ? null
-                                : () {
-                                    setState(() {
-                                      _selectedActionType = 'attack';
-                                      // Reset all metadata selections
-                                      _selectedServeType = null;
-                                      _selectedServeResult = null;
-                                      _selectedPassRating = null;
-                                      _selectedAttackResult = null;
-                                    });
-                                    _startCoordinateRecording('attack');
-                                  },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF8800),
-                              backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: const Color(0xFFFF8800),
-                                width: 1,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 8,
-                              ),
-                              minimumSize: const Size(0, 24),
-                            ),
-                            child: Text(
-                              'Attack',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 4),
+
+                // Attack Column
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFFFF8800),
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Attack Title
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: const Text(
+                              'ATTACK',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
+                                color: Color(0xFFFF8800),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
-                                color: const Color(0xFFFF8800),
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          // Attack Results
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Kill',
+                                  const Color(0xFF00FF88),
+                                  () => _selectAttackResult('kill'),
+                                  _selectedAttackResult == 'kill',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'In',
+                                  const Color(0xFF00E5FF),
+                                  () => _selectAttackResult('in'),
+                                  _selectedAttackResult == 'in',
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Expanded(
+                                child: _buildCompactButton(
+                                  'Error',
+                                  const Color(0xFFFF4444),
+                                  () => _selectAttackResult('error'),
+                                  _selectedAttackResult == 'error',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 8),
+            // Single Save Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _canSaveAction() ? _saveCurrentAction : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _getSaveButtonColor(),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: Text(
+                  _getSaveButtonText(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      );
-    } else {
-      // Show metadata for selected action
-      return _buildActionMetadata();
+      ),
+    );
+  }
+
+  Widget _buildCompactButton(
+    String label,
+    Color color,
+    VoidCallback onPressed,
+    bool isSelected,
+  ) {
+    return OutlinedButton(
+      onPressed: _selectedPlayer == null ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        backgroundColor: isSelected
+            ? color.withOpacity(0.2)
+            : Colors.transparent,
+        side: BorderSide(
+          color: isSelected ? color : color,
+          width: isSelected ? 2 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        minimumSize: const Size(0, 20),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  bool _canSaveAction() {
+    if (_selectedPlayer == null || _startX == null || _endX == null) {
+      return false;
+    }
+
+    // Check if any action type has all required selections
+    if (_selectedServeType != null && _selectedServeResult != null) {
+      return true;
+    }
+    if (_selectedPassRating != null) {
+      return true;
+    }
+    if (_selectedAttackResult != null) {
+      return true;
+    }
+
+    return false;
+  }
+
+  Color _getSaveButtonColor() {
+    if (_selectedServeType != null && _selectedServeResult != null) {
+      return const Color(0xFF00E5FF); // Blue for serve
+    }
+    if (_selectedPassRating != null) {
+      return const Color(0xFF00FF88); // Green for pass
+    }
+    if (_selectedAttackResult != null) {
+      return const Color(0xFFFF8800); // Orange for attack
+    }
+    return Colors.grey;
+  }
+
+  String _getSaveButtonText() {
+    if (_selectedServeType != null && _selectedServeResult != null) {
+      return 'Save Serve';
+    }
+    if (_selectedPassRating != null) {
+      return 'Save Pass';
+    }
+    if (_selectedAttackResult != null) {
+      return 'Save Attack';
+    }
+    return 'Select Action';
+  }
+
+  void _saveCurrentAction() {
+    if (_selectedServeType != null && _selectedServeResult != null) {
+      _saveServeAction();
+    } else if (_selectedPassRating != null) {
+      _savePassAction();
+    } else if (_selectedAttackResult != null) {
+      _saveAttackAction();
     }
   }
 
-  Widget _buildActionMetadata() {
-    switch (_selectedActionType) {
-      case 'serve':
-        return _buildServeMetadata();
-      case 'pass':
-        return _buildPassMetadata();
-      case 'attack':
-        return _buildAttackMetadata();
-      default:
-        return Container();
-    }
-  }
-
-  Widget _buildServeMetadata() {
-    final servingStats = _getServingStats();
-    final totalServes =
-        servingStats['float']! +
-        servingStats['hybrid']! +
-        servingStats['spin']!;
-    final subtitle =
-        '$totalServes serves | Float:${servingStats['float']} | In:${servingStats['in']} | Error:${servingStats['error']}';
-
-    return StatsSection(
-      title: 'Serving',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        // Back button and serve type selection
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => setState(() => _selectedActionType = null),
-              icon: const Icon(Icons.arrow_back, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                children: [
-                  // Serve type buttons in one row
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: 'Float',
-                        color: const Color(0xFF00E5FF),
-                        onPressed: () =>
-                            setState(() => _selectedServeType = 'float'),
-                        isDisabled: _selectedPlayer == null,
-                        isSelected: _selectedServeType == 'float',
-                      ),
-                      StatButtonData(
-                        label: 'Hybrid',
-                        color: const Color(0xFF00E5FF),
-                        onPressed: () =>
-                            setState(() => _selectedServeType = 'hybrid'),
-                        isDisabled: _selectedPlayer == null,
-                        isSelected: _selectedServeType == 'hybrid',
-                      ),
-                      StatButtonData(
-                        label: 'Spin',
-                        color: const Color(0xFF00E5FF),
-                        onPressed: () =>
-                            setState(() => _selectedServeType = 'spin'),
-                        isDisabled: _selectedPlayer == null,
-                        isSelected: _selectedServeType == 'spin',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Serve Results
-        StatButtonRow(
-          buttons: [
-            StatButtonData(
-              label: 'Ace',
-              color: const Color(0xFF00FF88),
-              onPressed: () => _selectServeResult('ace'),
-              isDisabled: _selectedPlayer == null,
-              isSelected: _selectedServeResult == 'ace',
-            ),
-            StatButtonData(
-              label: 'In',
-              color: const Color(0xFF00E5FF),
-              onPressed: () => _selectServeResult('in'),
-              isDisabled: _selectedPlayer == null,
-              isSelected: _selectedServeResult == 'in',
-            ),
-            StatButtonData(
-              label: 'Error',
-              color: const Color(0xFFFF4444),
-              onPressed: () => _selectServeResult('error'),
-              isDisabled: _selectedPlayer == null,
-              isSelected: _selectedServeResult == 'error',
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Save Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed:
-                _selectedPlayer == null ||
-                    _selectedActionType != 'serve' ||
-                    (_startX == null || _endX == null)
-                ? null
-                : () => _saveServeAction(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              minimumSize: const Size(0, 32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: Text(
-              'Save Serve',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPassMetadata() {
-    final passingStats = _getPassingStats();
-    final passingAverage = _getPassingAverage();
-    final totalPasses = passingStats.values.reduce((a, b) => a + b);
-    final subtitle =
-        '$totalPasses attempts | ${passingAverage.toStringAsFixed(2)} average | Ace:${passingStats['ace']} | 1:${passingStats['1']} | 2:${passingStats['2']} | 3:${passingStats['3']} | 0:${passingStats['0']}';
-
-    return StatsSection(
-      title: 'Passing',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        // Back button
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => setState(() => _selectedActionType = null),
-              icon: const Icon(Icons.arrow_back, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: StatButtonRow(
-                buttons: [
-                  StatButtonData(
-                    label: 'Ace',
-                    color: const Color(0xFF00FF88),
-                    onPressed: () => _selectPassRating('ace'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedPassRating == 'ace',
-                  ),
-                  StatButtonData(
-                    label: '3',
-                    color: const Color(0xFF00FF88),
-                    onPressed: () => _selectPassRating('3'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedPassRating == '3',
-                  ),
-                  StatButtonData(
-                    label: '2',
-                    color: const Color(0xFF00E5FF),
-                    onPressed: () => _selectPassRating('2'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedPassRating == '2',
-                  ),
-                  StatButtonData(
-                    label: '1',
-                    color: const Color(0xFFFF8800),
-                    onPressed: () => _selectPassRating('1'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedPassRating == '1',
-                  ),
-                  StatButtonData(
-                    label: '0',
-                    color: const Color(0xFFFF4444),
-                    onPressed: () => _selectPassRating('0'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedPassRating == '0',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Save Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed:
-                _selectedPlayer == null ||
-                    _selectedActionType != 'pass' ||
-                    (_startX == null || _endX == null)
-                ? null
-                : () => _savePassAction(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00FF88),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              minimumSize: const Size(0, 32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: Text(
-              'Save Pass',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAttackMetadata() {
-    final attackingStats = _getAttackingStats();
-    final totalAttacks = attackingStats.values.reduce((a, b) => a + b);
-    final hitPercentage = totalAttacks > 0
-        ? (attackingStats['kill']! - attackingStats['error']!) / totalAttacks
-        : 0.0;
-    final subtitle =
-        '$totalAttacks attacks | ${_formatHitPercentage(hitPercentage)} hit | Kill:${attackingStats['kill']} | In:${attackingStats['in']} | Error:${attackingStats['error']}';
-
-    return StatsSection(
-      title: 'Attacking',
-      subtitle: subtitle,
-      isLoading: _isLoadingPlayerStats,
-      children: [
-        // Back button
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => setState(() => _selectedActionType = null),
-              icon: const Icon(Icons.arrow_back, size: 20),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: StatButtonRow(
-                buttons: [
-                  StatButtonData(
-                    label: 'Kill',
-                    color: const Color(0xFF00FF88),
-                    onPressed: () => _selectAttackResult('kill'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedAttackResult == 'kill',
-                  ),
-                  StatButtonData(
-                    label: 'In',
-                    color: const Color(0xFF00E5FF),
-                    onPressed: () => _selectAttackResult('in'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedAttackResult == 'in',
-                  ),
-                  StatButtonData(
-                    label: 'Error',
-                    color: const Color(0xFFFF4444),
-                    onPressed: () => _selectAttackResult('error'),
-                    isDisabled: _selectedPlayer == null,
-                    isSelected: _selectedAttackResult == 'error',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        // Save Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed:
-                _selectedPlayer == null ||
-                    _selectedActionType != 'attack' ||
-                    (_startX == null || _endX == null)
-                ? null
-                : () => _saveAttackAction(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF8800),
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              minimumSize: const Size(0, 32),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            child: Text(
-              'Save Attack',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-        ),
-      ],
-    );
+  void _selectServeType(String type) {
+    setState(() {
+      _selectedServeType = type;
+      _startCoordinateRecording('serve');
+    });
   }
 
   void _saveServeAction() async {
@@ -2501,24 +2312,23 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _endY = null;
       });
 
-      // Refresh player stats
+      // Refresh team players to update stats
       await _loadTeamPlayers();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Serve type saved for ${tempEvent.player.firstName}'),
-            backgroundColor: const Color(0xFF00E5FF),
+            content: Text('Serve saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      print('Error saving serve action: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving serve action: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -2565,10 +2375,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = y;
         _hasStartPoint = true;
       } else {
-        // Second tap - set end point but keep recording active to show both points
+        // Second tap - set end point
         _endX = x;
         _endY = y;
-        // Keep _isRecordingCoordinates = true so points remain visible
+        // Keep recording state true so points remain visible
       }
     });
   }
@@ -2626,20 +2436,17 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Pass rating saved for ${tempEvent.player.firstName}',
-            ),
-            backgroundColor: const Color(0xFF00FF88),
+            content: Text('Pass saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      print('Error saving pass action: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving pass action: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -2689,20 +2496,17 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Attack result saved for ${tempEvent.player.firstName}',
-            ),
-            backgroundColor: const Color(0xFFFF8800),
+            content: Text('Attack saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      print('Error saving attack action: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving attack action: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: Colors.red,
           ),
         );
       }
