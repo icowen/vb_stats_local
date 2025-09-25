@@ -32,7 +32,6 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -65,6 +64,7 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                         // Net is at X=60 feet (right side of court)
                         // Top left of inner court is (0,0), bottom left is (0,30)
                         // Areas outside court can have negative coordinates
+                        // Note: localPosition is relative to GestureDetector (660x330), not the padded container
                         final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
                         final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
                         final x =

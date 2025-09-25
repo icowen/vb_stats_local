@@ -1264,28 +1264,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         isRecording: true, // Always allow editing
                         onCourtTap: (x, y) {
                           setModalState(() {
-                            // Check if tapping near existing start point
+                            // Check if tapping near existing start point (within 2 feet)
                             if (editStartX != null && editStartY != null) {
-                              final courtOffsetX = (660 - 480) / 2; // 90 pixels
-                              final courtOffsetY =
-                                  (480 - 240) / 2; // 120 pixels
-                              final startXPos =
-                                  courtOffsetX + (editStartX! / 60.0) * 480;
-                              final startYPos =
-                                  courtOffsetY + (editStartY! / 30.0) * 240;
-
-                              // Convert tap coordinates to court coordinates
-                              final tapCourtX = courtOffsetX + (x / 60.0) * 480;
-                              final tapCourtY = courtOffsetY + (y / 30.0) * 240;
-
                               final distanceToStart =
-                                  ((tapCourtX - startXPos) *
-                                      (tapCourtX - startXPos) +
-                                  (tapCourtY - startYPos) *
-                                      (tapCourtY - startYPos));
+                                  ((x - editStartX!) * (x - editStartX!) +
+                                  (y - editStartY!) * (y - editStartY!));
 
-                              if (distanceToStart < 400) {
-                                // Within ~20 pixels
+                              if (distanceToStart < 4.0) {
+                                // Within ~2 feet (4 square feet)
                                 // Remove start point
                                 editStartX = null;
                                 editStartY = null;
@@ -1294,28 +1280,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                               }
                             }
 
-                            // Check if tapping near existing end point
+                            // Check if tapping near existing end point (within 2 feet)
                             if (editEndX != null && editEndY != null) {
-                              final courtOffsetX = (660 - 480) / 2; // 90 pixels
-                              final courtOffsetY =
-                                  (480 - 240) / 2; // 120 pixels
-                              final endXPos =
-                                  courtOffsetX + (editEndX! / 60.0) * 480;
-                              final endYPos =
-                                  courtOffsetY + (editEndY! / 30.0) * 240;
-
-                              // Convert tap coordinates to court coordinates
-                              final tapCourtX = courtOffsetX + (x / 60.0) * 480;
-                              final tapCourtY = courtOffsetY + (y / 30.0) * 240;
-
                               final distanceToEnd =
-                                  ((tapCourtX - endXPos) *
-                                      (tapCourtX - endXPos) +
-                                  (tapCourtY - endYPos) *
-                                      (tapCourtY - endYPos));
+                                  ((x - editEndX!) * (x - editEndX!) +
+                                  (y - editEndY!) * (y - editEndY!));
 
-                              if (distanceToEnd < 400) {
-                                // Within ~20 pixels
+                              if (distanceToEnd < 4.0) {
+                                // Within ~2 feet (4 square feet)
                                 // Remove end point
                                 editEndX = null;
                                 editEndY = null;
