@@ -970,7 +970,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
-        onLongPress: () => _showEventOptionsModal(event),
+        onTap: () => _showEventOptionsModal(event),
         child: ListTile(
           dense: true,
           leading: Icon(eventIcon, color: eventColor, size: 20),
