@@ -447,17 +447,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
-        _isRecordingCoordinates = false; // Stop coordinate recording
-        _recordingAction = null;
-        _hasStartPoint = false;
-        _startX = null;
-        _startY = null;
-        _endX = null;
-        _endY = null;
-        _displayStartX = null;
-        _displayStartY = null;
-        _displayEndX = null;
-        _displayEndY = null;
+        // Keep coordinates when unselecting player
         _isLoadingPlayerStats = false;
       });
     } else {
@@ -469,17 +459,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
-        _isRecordingCoordinates = false; // Stop coordinate recording
-        _recordingAction = null;
-        _hasStartPoint = false;
-        _startX = null;
-        _startY = null;
-        _endX = null;
-        _endY = null;
-        _displayStartX = null;
-        _displayStartY = null;
-        _displayEndX = null;
-        _displayEndY = null;
+        // Keep coordinates when selecting new player
         _isLoadingPlayerStats = true;
       });
 
@@ -860,7 +840,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             endY: _displayEndY,
             hasStartPoint: _hasStartPoint,
             selectedAction: _recordingAction,
-            isRecording: _isRecordingCoordinates,
+            isRecording: true, // Always allow coordinate recording
           ),
           const SizedBox(height: 16),
           // Team Stats Table
@@ -2489,7 +2469,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set serve type
       _selectedServeType = type;
-      _startCoordinateRecording('serve');
+      // Don't clear coordinates when changing action
     });
   }
 
@@ -2582,7 +2562,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
-      _startCoordinateRecording('serve');
+      // Don't clear coordinates when changing action
     });
   }
 
@@ -2595,7 +2575,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set pass rating
       _selectedPassRating = rating;
-      _startCoordinateRecording('pass');
+      // Don't clear coordinates when changing action
     });
   }
 
@@ -2608,7 +2588,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set attack result
       _selectedAttackResult = result;
-      _startCoordinateRecording('attack');
+      // Don't clear coordinates when changing action
     });
   }
 
@@ -2647,20 +2627,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     setState(() {
       _isRecordingCoordinates = true;
       _recordingAction = action;
-      _hasStartPoint = false;
-      _startX = null;
-      _startY = null;
-      _endX = null;
-      _endY = null;
-      _displayStartX = null;
-      _displayStartY = null;
-      _displayEndX = null;
-      _displayEndY = null;
+      // Don't clear existing coordinates - allow recording over them
     });
   }
 
   void _onCourtTap(double x, double y) {
-    if (!_isRecordingCoordinates) return;
+    // Allow coordinate recording anytime, regardless of player/action selection
 
     setState(() {
       if (!_hasStartPoint) {

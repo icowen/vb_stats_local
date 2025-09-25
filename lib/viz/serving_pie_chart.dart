@@ -25,66 +25,33 @@ class ServingPieChart extends StatelessWidget {
       'spin': {'in': 0, 'error': 0, 'total': 0},
     };
 
-    for (final player in practicePlayers) {
-      final playerEvents = teamEvents
-          .where((e) => e.player.id == player.id)
-          .toList();
-      final servingStats = getPlayerServingStats(playerEvents);
+    // Process each serve event to get accurate results per serve type
+    final serveEvents = teamEvents
+        .where((e) => e.type == EventType.serve)
+        .toList();
 
-      // Count serve types
-      servingTypes['float'] =
-          (servingTypes['float'] ?? 0) + ((servingStats['float'] ?? 0) as int);
-      servingTypes['hybrid'] =
-          (servingTypes['hybrid'] ?? 0) +
-          ((servingStats['hybrid'] ?? 0) as int);
-      servingTypes['spin'] =
-          (servingTypes['spin'] ?? 0) + ((servingStats['spin'] ?? 0) as int);
+    for (final event in serveEvents) {
+      final serveType = event.metadata['serveType'] as String?;
+      final result = event.metadata['result'] as String?;
 
-      // For now, we'll distribute the overall in/error results proportionally
-      // since the current data structure doesn't track results per serve type
-      final totalIn = (servingStats['in'] ?? 0) as int;
-      final totalError = (servingStats['error'] ?? 0) as int;
-      final totalServes = (servingStats['total'] ?? 0) as int;
+      if (serveType != null &&
+          (serveType == 'float' ||
+              serveType == 'hybrid' ||
+              serveType == 'spin')) {
+        // Count serve types
+        servingTypes[serveType] = (servingTypes[serveType] ?? 0) + 1;
+        servingResults[serveType]!['total'] =
+            (servingResults[serveType]!['total'] ?? 0) + 1;
 
-      if (totalServes > 0) {
-        final floatCount = (servingStats['float'] ?? 0) as int;
-        final hybridCount = (servingStats['hybrid'] ?? 0) as int;
-        final spinCount = (servingStats['spin'] ?? 0) as int;
-
-        // Distribute in/error results proportionally based on serve type usage
-        servingResults['float']!['total'] =
-            (servingResults['float']!['total'] ?? 0) + floatCount;
-        servingResults['hybrid']!['total'] =
-            (servingResults['hybrid']!['total'] ?? 0) + hybridCount;
-        servingResults['spin']!['total'] =
-            (servingResults['spin']!['total'] ?? 0) + spinCount;
-
-        if (floatCount > 0) {
-          final floatRatio = floatCount / totalServes;
-          servingResults['float']!['in'] =
-              (servingResults['float']!['in'] ?? 0) +
-              (totalIn * floatRatio).round();
-          servingResults['float']!['error'] =
-              (servingResults['float']!['error'] ?? 0) +
-              (totalError * floatRatio).round();
-        }
-        if (hybridCount > 0) {
-          final hybridRatio = hybridCount / totalServes;
-          servingResults['hybrid']!['in'] =
-              (servingResults['hybrid']!['in'] ?? 0) +
-              (totalIn * hybridRatio).round();
-          servingResults['hybrid']!['error'] =
-              (servingResults['hybrid']!['error'] ?? 0) +
-              (totalError * hybridRatio).round();
-        }
-        if (spinCount > 0) {
-          final spinRatio = spinCount / totalServes;
-          servingResults['spin']!['in'] =
-              (servingResults['spin']!['in'] ?? 0) +
-              (totalIn * spinRatio).round();
-          servingResults['spin']!['error'] =
-              (servingResults['spin']!['error'] ?? 0) +
-              (totalError * spinRatio).round();
+        // Count results for this specific serve type
+        if (result != null) {
+          if (result == 'in' || result == 'ace') {
+            servingResults[serveType]!['in'] =
+                (servingResults[serveType]!['in'] ?? 0) + 1;
+          } else if (result == 'error') {
+            servingResults[serveType]!['error'] =
+                (servingResults[serveType]!['error'] ?? 0) + 1;
+          }
         }
       }
     }
@@ -94,20 +61,22 @@ class ServingPieChart extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Calculate total stats across all players
+    // Calculate total stats from the accurate serving results
     int totalMakes = 0;
     int totalErrors = 0;
     int totalAces = 0;
 
-    for (final player in practicePlayers) {
-      final playerEvents = teamEvents
-          .where((e) => e.player.id == player.id)
-          .toList();
-      final servingStats = getPlayerServingStats(playerEvents);
+    for (final results in servingResults.values) {
+      totalMakes += results['in'] ?? 0;
+      totalErrors += results['error'] ?? 0;
+    }
 
-      totalMakes += (servingStats['in'] ?? 0) as int;
-      totalErrors += (servingStats['error'] ?? 0) as int;
-      totalAces += (servingStats['ace'] ?? 0) as int;
+    // Calculate aces separately from serve events
+    for (final event in serveEvents) {
+      final result = event.metadata['result'] as String?;
+      if (result == 'ace') {
+        totalAces++;
+      }
     }
 
     return Card(
@@ -287,15 +256,49 @@ class ServingPieChart extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
-        SizedBox(
-          height: 20,
-          width: 120,
-          child: _buildBarSegments(
-            makePercentage,
-            missPercentage,
-            inCount,
-            errorCount,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Makes count on the left
+            SizedBox(
+              width: 25,
+              child: Text(
+                inCount.toString(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF00FF88),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(width: 5),
+            // Bar chart
+            SizedBox(
+              height: 28,
+              width: 120,
+              child: _buildBarSegments(
+                makePercentage,
+                missPercentage,
+                inCount,
+                errorCount,
+              ),
+            ),
+            const SizedBox(width: 5),
+            // Misses count on the right
+            SizedBox(
+              width: 25,
+              child: Text(
+                errorCount.toString(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFF4444),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -313,7 +316,7 @@ class ServingPieChart extends StatelessWidget {
     // If both are 0, show empty bar with label
     if (makePercent == 0 && missPercent == 0) {
       return Container(
-        height: 20,
+        height: 28,
         decoration: BoxDecoration(
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
@@ -378,12 +381,16 @@ class ServingPieChart extends StatelessWidget {
       );
     }
 
-    // Both have values, show split bar
+    // Both have values, show split bar with minimum widths
+    final minPercent = 20; // Minimum 20% width for readability
+    final adjustedMakePercent = math.max(makePercent, minPercent);
+    final adjustedMissPercent = math.max(missPercent, minPercent);
+
     return Row(
       children: [
         // Make percentage (green)
         Expanded(
-          flex: makePercent,
+          flex: adjustedMakePercent,
           child: Tooltip(
             message: 'Makes: ${makePercent}% ($inCount)',
             child: Container(
@@ -409,7 +416,7 @@ class ServingPieChart extends StatelessWidget {
         ),
         // Miss percentage (red)
         Expanded(
-          flex: missPercent,
+          flex: adjustedMissPercent,
           child: Tooltip(
             message: 'Misses: ${missPercent}% ($errorCount)',
             child: Container(
