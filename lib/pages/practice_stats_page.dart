@@ -118,7 +118,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       }
 
       setState(() {
-        _teamPlayers = practicePlayers;
+        _teamPlayers = _sortPlayers(practicePlayers);
         _allPlayers = allPlayers;
         _teamEvents = teamEvents;
         _isLoading = false;
@@ -139,7 +139,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('${widget.practice.team.teamName} Practice'),
+        title: Text(
+          '${widget.practice.team.teamName} Practice - ${DateFormatter.formatDate(widget.practice.date)}',
+        ),
         actions: [
           if (_undoStack.isNotEmpty)
             IconButton(
@@ -175,52 +177,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                     ),
                     child: Column(
                       children: [
-                        // Practice Info Header
-                        Container(
-                          padding: const EdgeInsets.all(12.0),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.1),
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.grey.withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.fitness_center,
-                                color: Color(0xFF00FF88),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.practice.practiceTitle,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall,
-                                    ),
-                                    Text(
-                                      DateFormatter.formatDate(
-                                        widget.practice.date,
-                                      ),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         // Add Player and Team Buttons
                         Padding(
                           padding: const EdgeInsets.all(8.0),
@@ -282,14 +238,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     ),
                                   ),
                                 )
-                              : GridView.builder(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        childAspectRatio: 2.2,
-                                        crossAxisSpacing: 4,
-                                        mainAxisSpacing: 2,
-                                      ),
+                              : ListView.builder(
                                   padding: const EdgeInsets.all(8),
                                   itemCount: _teamPlayers.length,
                                   itemBuilder: (context, index) {
@@ -297,7 +246,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     final isSelected =
                                         _selectedPlayer?.id == player.id;
                                     return Container(
-                                      margin: EdgeInsets.zero,
+                                      margin: const EdgeInsets.only(bottom: 2),
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? const Color(
@@ -319,49 +268,63 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                         borderRadius: BorderRadius.circular(8),
                                         child: Container(
                                           width: double.infinity,
-                                          height: double.infinity,
+                                          height:
+                                              36, // Fixed height for short tiles
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
+                                            horizontal: 12,
+                                            vertical: 2,
                                           ),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
+                                          child: Row(
                                             children: [
-                                              // Jersey number and first name on one line
-                                              Text(
-                                                player.jerseyNumber != null
-                                                    ? '${player.jerseyDisplay} ${player.firstName ?? ''}'
-                                                    : player.firstName ?? '',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                  color: isSelected
-                                                      ? const Color(0xFF00E5FF)
-                                                      : null,
+                                              // Jersey number (if available)
+                                              if (player.jerseyNumber !=
+                                                  null) ...[
+                                                Container(
+                                                  width: 24,
+                                                  height: 24,
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? const Color(
+                                                            0xFF00E5FF,
+                                                          )
+                                                        : Colors.grey[600],
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      '${player.jerseyNumber}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 2),
-                                              // Last name on second line
-                                              Text(
-                                                player.lastName ?? '',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                  color: isSelected
-                                                      ? const Color(0xFF00E5FF)
-                                                      : null,
+                                                const SizedBox(width: 8),
+                                              ],
+                                              // Player name
+                                              Expanded(
+                                                child: Text(
+                                                  player.fullName,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                    color: isSelected
+                                                        ? const Color(
+                                                            0xFF00E5FF,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                                textAlign: TextAlign.center,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ],
                                           ),
@@ -413,6 +376,40 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         builder: (context) => PracticeAnalysisPage(practice: widget.practice),
       ),
     );
+  }
+
+  // Sort players by jersey number, then first name, then last name
+  List<Player> _sortPlayers(List<Player> players) {
+    final sortedPlayers = List<Player>.from(players);
+    sortedPlayers.sort((a, b) {
+      // First sort by jersey number (nulls last)
+      final aJersey = a.jerseyNumber;
+      final bJersey = b.jerseyNumber;
+
+      if (aJersey == null && bJersey == null) {
+        // Both null, sort by first name
+      } else if (aJersey == null) {
+        return 1; // a comes after b
+      } else if (bJersey == null) {
+        return -1; // a comes before b
+      } else {
+        final jerseyCompare = aJersey.compareTo(bJersey);
+        if (jerseyCompare != 0) return jerseyCompare;
+      }
+
+      // Then sort by first name
+      final aFirstName = a.firstName ?? '';
+      final bFirstName = b.firstName ?? '';
+      final firstNameCompare = aFirstName.compareTo(bFirstName);
+      if (firstNameCompare != 0) return firstNameCompare;
+
+      // Finally sort by last name
+      final aLastName = a.lastName ?? '';
+      final bLastName = b.lastName ?? '';
+      return aLastName.compareTo(bLastName);
+    });
+
+    return sortedPlayers;
   }
 
   Future<void> _initializePlayerCache() async {
@@ -537,6 +534,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             // Update local state
                             setState(() {
                               _teamPlayers.add(player);
+                              _teamPlayers = _sortPlayers(_teamPlayers);
                             });
 
                             Navigator.of(context).pop();
@@ -719,6 +717,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                           // Update local state
                           setState(() {
                             _teamPlayers.addAll(newPlayers);
+                            _teamPlayers = _sortPlayers(_teamPlayers);
                           });
 
                           // Update cache for new players
