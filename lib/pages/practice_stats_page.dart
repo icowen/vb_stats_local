@@ -1601,15 +1601,23 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     double? newToY,
   ) async {
     try {
+      // Normalize coordinates so first point is always on left half
+      final normalizedCoords = _normalizeCoordinates(
+        newFromX,
+        newFromY,
+        newToX,
+        newToY,
+      );
+
       // Create updated event
       final updatedEvent = originalEvent.copyWith(
         player: newPlayer,
         type: EventType.values.firstWhere((e) => e.name == newEventType),
         metadata: newMetadata,
-        fromX: newFromX,
-        fromY: newFromY,
-        toX: newToX,
-        toY: newToY,
+        fromX: normalizedCoords['fromX'],
+        fromY: normalizedCoords['fromY'],
+        toX: normalizedCoords['toX'],
+        toY: normalizedCoords['toY'],
       );
 
       // Add to undo stack
@@ -2464,6 +2472,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     // Get the team from the practice
     final team = widget.practice.team;
 
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
     // Create a temporary event to store the serve type
     final tempEvent = Event(
       id: DateTime.now().millisecondsSinceEpoch,
@@ -2477,10 +2493,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         'result': _selectedServeResult ?? 'unknown',
       },
       timestamp: DateTime.now(),
-      fromX: _startX,
-      fromY: _startY,
-      toX: _endX,
-      toY: _endY,
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
     );
 
     try {
@@ -2630,12 +2646,45 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     });
   }
 
+  // Normalize coordinates so the first point is always on the left half
+  Map<String, double?> _normalizeCoordinates(
+    double? startX,
+    double? startY,
+    double? endX,
+    double? endY,
+  ) {
+    if (startX == null || startY == null || endX == null || endY == null) {
+      return {'fromX': startX, 'fromY': startY, 'toX': endX, 'toY': endY};
+    }
+
+    // If the first point is on the right side (X > 30), flip both coordinates
+    if (startX > 30.0) {
+      return {
+        'fromX': 60.0 - endX, // Flip X: 60 - endX
+        'fromY': 30.0 - endY, // Flip Y: 30 - endY
+        'toX': 60.0 - startX, // Flip X: 60 - startX
+        'toY': 30.0 - startY, // Flip Y: 30 - startY
+      };
+    } else {
+      // First point is already on the left, keep as is
+      return {'fromX': startX, 'fromY': startY, 'toX': endX, 'toY': endY};
+    }
+  }
+
   void _savePassAction() async {
     if (_selectedPlayer == null || _startX == null || _endX == null) {
       return;
     }
 
     final team = widget.practice.team;
+
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
 
     final tempEvent = Event(
       id: DateTime.now().millisecondsSinceEpoch,
@@ -2646,10 +2695,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       type: EventType.pass,
       metadata: {'rating': _selectedPassRating ?? 'unknown'},
       timestamp: DateTime.now(),
-      fromX: _startX,
-      fromY: _startY,
-      toX: _endX,
-      toY: _endY,
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
     );
 
     try {
@@ -2697,6 +2746,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
     final team = widget.practice.team;
 
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
     final tempEvent = Event(
       id: DateTime.now().millisecondsSinceEpoch,
       practice: widget.practice,
@@ -2706,10 +2763,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       type: EventType.attack,
       metadata: {'result': _selectedAttackResult ?? 'unknown'},
       timestamp: DateTime.now(),
-      fromX: _startX,
-      fromY: _startY,
-      toX: _endX,
-      toY: _endY,
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
     );
 
     try {
