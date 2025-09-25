@@ -441,6 +441,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
+        _isRecordingCoordinates = false; // Stop coordinate recording
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
         _isLoadingPlayerStats = false;
       });
     } else {
@@ -452,6 +459,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
+        _isRecordingCoordinates = false; // Stop coordinate recording
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
         _isLoadingPlayerStats = true;
       });
 
@@ -2398,12 +2412,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   bool _canSaveAction() {
-    if (_selectedPlayer == null || _startX == null || _endX == null) {
+    if (_selectedPlayer == null) {
       return false;
     }
 
-    // Check if any action type has all required selections
-    if (_selectedServeType != null && _selectedServeResult != null) {
+    // Check if any action type is selected (metadata is optional)
+    if (_selectedServeType != null || _selectedServeResult != null) {
       return true;
     }
     if (_selectedPassRating != null) {
@@ -2417,7 +2431,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   Color _getSaveButtonColor() {
-    if (_selectedServeType != null && _selectedServeResult != null) {
+    if (_selectedServeType != null || _selectedServeResult != null) {
       return const Color(0xFF00E5FF); // Blue for serve
     }
     if (_selectedPassRating != null) {
@@ -2430,7 +2444,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   String _getSaveButtonText() {
-    if (_selectedServeType != null && _selectedServeResult != null) {
+    if (_selectedServeType != null || _selectedServeResult != null) {
       return 'Save Serve';
     }
     if (_selectedPassRating != null) {
@@ -2443,7 +2457,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _saveCurrentAction() {
-    if (_selectedServeType != null && _selectedServeResult != null) {
+    if (_selectedServeType != null || _selectedServeResult != null) {
       _saveServeAction();
     } else if (_selectedPassRating != null) {
       _savePassAction();
@@ -2466,7 +2480,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _saveServeAction() async {
-    if (_selectedPlayer == null || _startX == null || _endX == null) {
+    if (_selectedPlayer == null) {
       return;
     }
 
@@ -2549,6 +2563,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
+      _startCoordinateRecording('serve');
     });
   }
 
@@ -2561,6 +2576,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set pass rating
       _selectedPassRating = rating;
+      _startCoordinateRecording('pass');
     });
   }
 
@@ -2573,6 +2589,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       // Set attack result
       _selectedAttackResult = result;
+      _startCoordinateRecording('attack');
     });
   }
 
@@ -2673,7 +2690,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _savePassAction() async {
-    if (_selectedPlayer == null || _startX == null || _endX == null) {
+    if (_selectedPlayer == null) {
       return;
     }
 
@@ -2741,7 +2758,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _saveAttackAction() async {
-    if (_selectedPlayer == null || _startX == null || _endX == null) {
+    if (_selectedPlayer == null) {
       return;
     }
 
