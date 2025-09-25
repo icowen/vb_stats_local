@@ -52,27 +52,20 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                   GestureDetector(
                     onTapDown: (details) {
                       if (widget.onCourtTap != null && widget.isRecording) {
-                        final RenderBox renderBox =
-                            context.findRenderObject() as RenderBox;
-                        final localPosition = renderBox.globalToLocal(
-                          details.globalPosition,
-                        );
+                        // Use the GestureDetector's local position directly
+                        final localPosition = details.localPosition;
 
-                        // Convert to court coordinates in feet
-                        // Inner court is 480x240 pixels, positioned at (90, 45) within outer border
-                        // Court is 60 feet wide (X) and 30 feet tall (Y)
-                        // Net is at X=60 feet (right side of court)
-                        // Top left of inner court is (0,0), bottom left is (0,30)
-                        // Areas outside court can have negative coordinates
-                        // Note: localPosition is relative to GestureDetector (660x330), not the padded container
-                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
-                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                        // Convert to normalized coordinates (0-1) within the court
+                        // Use the same offset calculation as the painter
+                        final courtOffsetX =
+                            74.83; // Match the painter's offset
+                        final courtOffsetY = 45.0; // Match the painter's offset
                         final x =
-                            ((localPosition.dx - courtOffsetX) / 480.0) *
-                            60.0; // 480 pixels = 60 feet
+                            (localPosition.dx - courtOffsetX) /
+                            480.0; // 0-1 normalized
                         final y =
-                            ((localPosition.dy - courtOffsetY) / 240.0) *
-                            30.0; // 240 pixels = 30 feet
+                            (localPosition.dy - courtOffsetY) /
+                            240.0; // 0-1 normalized
 
                         widget.onCourtTap!(x, y);
                       }
@@ -144,7 +137,7 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                           children: [
                             if (widget.hasStartPoint)
                               Text(
-                                'Start: (${widget.startX?.toStringAsFixed(1) ?? '?'}ft, ${widget.startY?.toStringAsFixed(1) ?? '?'}ft)',
+                                'Start: (${((widget.startX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.startY ?? 0) * 30).toStringAsFixed(1)}ft)',
                                 style: const TextStyle(
                                   color: Color(0xFF00FF88),
                                   fontWeight: FontWeight.w500,
@@ -155,7 +148,7 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                               const SizedBox(width: 8),
                             if (widget.endX != null)
                               Text(
-                                'End: (${widget.endX?.toStringAsFixed(1) ?? '?'}ft, ${widget.endY?.toStringAsFixed(1) ?? '?'}ft)',
+                                'End: (${((widget.endX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.endY ?? 0) * 30).toStringAsFixed(1)}ft)',
                                 style: const TextStyle(
                                   color: Color(0xFF00E5FF),
                                   fontWeight: FontWeight.w500,
@@ -310,11 +303,9 @@ class VolleyballCourtPainter extends CustomPainter {
         final courtOffsetX = (size.width - 480) / 2; // 90 pixels
         final courtOffsetY = (size.height - 240) / 2; // 45 pixels
         final startXPos =
-            courtOffsetX +
-            (startX! / 60.0) * 480; // Convert feet to pixels within inner court
+            courtOffsetX + (startX! * 480); // Convert normalized to pixels
         final startYPos =
-            courtOffsetY +
-            (startY! / 30.0) * 240; // Convert feet to pixels within inner court
+            courtOffsetY + (startY! * 240); // Convert normalized to pixels
 
         // Draw start point (green)
         canvas.drawCircle(
@@ -340,11 +331,9 @@ class VolleyballCourtPainter extends CustomPainter {
         final courtOffsetX = (size.width - 480) / 2; // 90 pixels
         final courtOffsetY = (size.height - 240) / 2; // 45 pixels
         final endXPos =
-            courtOffsetX +
-            (endX! / 60.0) * 480; // Convert feet to pixels within inner court
+            courtOffsetX + (endX! * 480); // Convert normalized to pixels
         final endYPos =
-            courtOffsetY +
-            (endY! / 30.0) * 240; // Convert feet to pixels within inner court
+            courtOffsetY + (endY! * 240); // Convert normalized to pixels
 
         // Draw end point (blue)
         canvas.drawCircle(
@@ -365,17 +354,21 @@ class VolleyballCourtPainter extends CustomPainter {
         );
 
         // Draw line between start and end points
-        if (hasStartPoint && startX != null && startY != null) {
-          final courtOffsetX = (size.width - 480) / 2; // 90 pixels
-          final courtOffsetY = (size.height - 240) / 2; // 45 pixels
+        if (hasStartPoint &&
+            startX != null &&
+            startY != null &&
+            endX != null &&
+            endY != null) {
+          final courtOffsetX = (size.width - 480) / 2;
+          final courtOffsetY = (size.height - 240) / 2;
           final startXPos =
-              courtOffsetX +
-              (startX! / 60.0) *
-                  480; // Convert feet to pixels within inner court
+              courtOffsetX + (startX! * 480); // Convert normalized to pixels
           final startYPos =
-              courtOffsetY +
-              (startY! / 30.0) *
-                  240; // Convert feet to pixels within inner court
+              courtOffsetY + (startY! * 240); // Convert normalized to pixels
+          final endXPos =
+              courtOffsetX + (endX! * 480); // Convert normalized to pixels
+          final endYPos =
+              courtOffsetY + (endY! * 240); // Convert normalized to pixels
 
           canvas.drawLine(
             Offset(startXPos, startYPos),

@@ -57,6 +57,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   double? _endY;
   bool _hasStartPoint = false;
 
+  // Display coordinates (original, not normalized)
+  double? _displayStartX;
+  double? _displayStartY;
+  double? _displayEndX;
+  double? _displayEndY;
+
   // Action selection for iterative stats
   String? _selectedActionType; // 'serve', 'pass', 'attack'
   String? _selectedServeResult; // 'ace', 'in', 'error'
@@ -448,6 +454,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = null;
         _endX = null;
         _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
         _isLoadingPlayerStats = false;
       });
     } else {
@@ -466,6 +476,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = null;
         _endX = null;
         _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
         _isLoadingPlayerStats = true;
       });
 
@@ -840,10 +854,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           VolleyballCourt(
             onCourtTap: _onCourtTap,
             onClear: _clearCoordinates,
-            startX: _startX,
-            startY: _startY,
-            endX: _endX,
-            endY: _endY,
+            startX: _displayStartX,
+            startY: _displayStartY,
+            endX: _displayEndX,
+            endY: _displayEndY,
             hasStartPoint: _hasStartPoint,
             selectedAction: _recordingAction,
             isRecording: _isRecordingCoordinates,
@@ -2530,6 +2544,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = null;
         _endX = null;
         _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
       });
 
       // Refresh team players to update stats
@@ -2633,6 +2651,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _startY = null;
       _endX = null;
       _endY = null;
+      _displayStartX = null;
+      _displayStartY = null;
+      _displayEndX = null;
+      _displayEndY = null;
     });
   }
 
@@ -2642,15 +2664,27 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     setState(() {
       if (!_hasStartPoint) {
         // First tap - set start point
-        _startX = x;
-        _startY = y;
+        _displayStartX = x;
+        _displayStartY = y;
         _hasStartPoint = true;
       } else {
         // Second tap - set end point
-        _endX = x;
-        _endY = y;
+        _displayEndX = x;
+        _displayEndY = y;
         // Keep recording state true so points remain visible
       }
+
+      // Calculate normalized coordinates for saving
+      final normalizedCoords = _normalizeCoordinates(
+        _displayStartX,
+        _displayStartY,
+        _displayEndX,
+        _displayEndY,
+      );
+      _startX = normalizedCoords['fromX'];
+      _startY = normalizedCoords['fromY'];
+      _endX = normalizedCoords['toX'];
+      _endY = normalizedCoords['toY'];
     });
   }
 
@@ -2661,6 +2695,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _startY = null;
       _endX = null;
       _endY = null;
+      _displayStartX = null;
+      _displayStartY = null;
+      _displayEndX = null;
+      _displayEndY = null;
     });
   }
 
@@ -2675,13 +2713,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       return {'fromX': startX, 'fromY': startY, 'toX': endX, 'toY': endY};
     }
 
-    // If the first point is on the right side (X > 30), flip both coordinates
-    if (startX > 30.0) {
+    // If the first point is on the right side (X > 0.5), flip both coordinates
+    if (startX > 0.5) {
       return {
-        'fromX': 60.0 - endX, // Flip X: 60 - endX
-        'fromY': 30.0 - endY, // Flip Y: 30 - endY
-        'toX': 60.0 - startX, // Flip X: 60 - startX
-        'toY': 30.0 - startY, // Flip Y: 30 - startY
+        'fromX': 1.0 - endX, // Flip X: 1.0 - endX
+        'fromY': 1.0 - endY, // Flip Y: 1.0 - endY
+        'toX': 1.0 - startX, // Flip X: 1.0 - startX
+        'toY': 1.0 - startY, // Flip Y: 1.0 - startY
       };
     } else {
       // First point is already on the left, keep as is
@@ -2733,6 +2771,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = null;
         _endX = null;
         _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
       });
 
       await _loadTeamPlayers();
@@ -2801,6 +2843,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _startY = null;
         _endX = null;
         _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
       });
 
       await _loadTeamPlayers();
