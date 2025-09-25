@@ -2179,15 +2179,23 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     VoidCallback onPressed,
     bool isSelected,
   ) {
+    final bool isDisabled = _selectedPlayer == null;
+
+    // Check if this is a serve type button
+    final bool isServeType = ['Float', 'Hybrid', 'Spin'].contains(label);
+    final Color buttonColor = isServeType ? Colors.orange : Colors.blue;
+
     return OutlinedButton(
-      onPressed: _selectedPlayer == null ? null : onPressed,
+      onPressed: isDisabled ? null : onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: color,
+        foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
-            ? color.withOpacity(0.2)
+            ? buttonColor.withOpacity(0.2)
             : Colors.transparent,
         side: BorderSide(
-          color: isSelected ? color : color,
+          color: isDisabled
+              ? Colors.grey
+              : (isSelected ? buttonColor : buttonColor),
           width: isSelected ? 2 : 1,
         ),
         padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
@@ -2199,7 +2207,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           fontSize: 12,
-          color: color,
+          color: isDisabled ? Colors.grey : buttonColor,
         ),
       ),
     );
@@ -2262,6 +2270,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   void _selectServeType(String type) {
     setState(() {
+      // Clear other action selections
+      _selectedPassRating = null;
+      _selectedAttackResult = null;
+      _selectedServeResult = null;
+
+      // Set serve type
       _selectedServeType = type;
       _startCoordinateRecording('serve');
     });
@@ -2337,18 +2351,35 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   void _selectServeResult(String result) {
     setState(() {
+      // Clear other action selections
+      _selectedPassRating = null;
+      _selectedAttackResult = null;
+
+      // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
     });
   }
 
   void _selectPassRating(String rating) {
     setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedAttackResult = null;
+
+      // Set pass rating
       _selectedPassRating = rating;
     });
   }
 
   void _selectAttackResult(String result) {
     setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+
+      // Set attack result
       _selectedAttackResult = result;
     });
   }
