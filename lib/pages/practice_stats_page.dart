@@ -835,21 +835,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             selectedAction: _recordingAction,
             isRecording: _isRecordingCoordinates,
           ),
-          if (_isRecordingCoordinates)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                _hasStartPoint && _endX != null
-                    ? 'Ready to save - both points recorded'
-                    : _hasStartPoint
-                    ? 'Tap for end point'
-                    : 'Tap for start point',
-                style: const TextStyle(
-                  color: Color(0xFF00E5FF),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
           const SizedBox(height: 16),
           // Team Stats Table
           Text(
