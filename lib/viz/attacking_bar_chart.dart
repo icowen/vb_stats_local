@@ -50,8 +50,14 @@ class AttackingBarChart extends StatelessWidget {
             final bKills = b.value['kill'] ?? 0;
 
             // Calculate hitting percentages
-            final aHitPercentage = aTotal > 0 ? aKills / aTotal : 0.0;
-            final bHitPercentage = bTotal > 0 ? bKills / bTotal : 0.0;
+            final aErrors = a.value['error'] ?? 0;
+            final bErrors = b.value['error'] ?? 0;
+            final aHitPercentage = aTotal > 0
+                ? (aKills - aErrors) / aTotal
+                : 0.0;
+            final bHitPercentage = bTotal > 0
+                ? (bKills - bErrors) / bTotal
+                : 0.0;
 
             // Sort by hitting percentage (descending - best to worst)
             return bHitPercentage.compareTo(aHitPercentage);
@@ -178,7 +184,9 @@ class AttackingBarChart extends StatelessWidget {
                                     ),
                                     Text(
                                       _formatHitPercentage(
-                                        total > 0 ? (kill / total) : 0.0,
+                                        total > 0
+                                            ? (kill - error) / total
+                                            : 0.0,
                                       ),
                                       style: Theme.of(context)
                                           .textTheme
@@ -357,6 +365,21 @@ class AttackingBarChart extends StatelessWidget {
                                                 ),
                                           ),
                                         ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Total attempts
+                              SizedBox(
+                                width: 40,
+                                child: Text(
+                                  total.toString(),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[700],
+                                        fontSize: 12,
+                                      ),
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                             ],
