@@ -2067,266 +2067,268 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         padding: const EdgeInsets.all(4.0),
         child: Column(
           children: [
-            Row(
-              children: [
-                // Serve Column
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF),
-                        width: 2,
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  // Serve Column
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFF00E5FF),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          // Serve Title
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: const Text(
-                              'SERVE',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF00E5FF),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            // Serve Title
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: const Text(
+                                'SERVE',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF00E5FF),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          // Serve Types
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Float',
-                                  const Color(0xFF00E5FF),
-                                  () => _selectServeType('float'),
-                                  _selectedServeType == 'float',
+                            const SizedBox(height: 2),
+                            // Serve Types
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Float',
+                                    const Color(0xFF00E5FF),
+                                    () => _selectServeType('float'),
+                                    _selectedServeType == 'float',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Hybrid',
-                                  const Color(0xFF00E5FF),
-                                  () => _selectServeType('hybrid'),
-                                  _selectedServeType == 'hybrid',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Hybrid',
+                                    const Color(0xFF00E5FF),
+                                    () => _selectServeType('hybrid'),
+                                    _selectedServeType == 'hybrid',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Spin',
-                                  const Color(0xFF00E5FF),
-                                  () => _selectServeType('spin'),
-                                  _selectedServeType == 'spin',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Spin',
+                                    const Color(0xFF00E5FF),
+                                    () => _selectServeType('spin'),
+                                    _selectedServeType == 'spin',
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          // Serve Results
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Ace',
-                                  const Color(0xFF00FF88),
-                                  () => _selectServeResult('ace'),
-                                  _selectedServeResult == 'ace',
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            // Serve Results
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Ace',
+                                    const Color(0xFF00FF88),
+                                    () => _selectServeResult('ace'),
+                                    _selectedServeResult == 'ace',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'In',
-                                  const Color(0xFF00FF88),
-                                  () => _selectServeResult('in'),
-                                  _selectedServeResult == 'in',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'In',
+                                    const Color(0xFF00FF88),
+                                    () => _selectServeResult('in'),
+                                    _selectedServeResult == 'in',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Error',
-                                  const Color(0xFFFF4444),
-                                  () => _selectServeResult('error'),
-                                  _selectedServeResult == 'error',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Error',
+                                    const Color(0xFFFF4444),
+                                    () => _selectServeResult('error'),
+                                    _selectedServeResult == 'error',
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 4),
+                  const SizedBox(width: 4),
 
-                // Pass Column
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFF00FF88),
-                        width: 2,
+                  // Pass Column
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFF00FF88),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          // Pass Title
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: const Text(
-                              'PASS',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF00FF88),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            // Pass Title
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: const Text(
+                                'PASS',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF00FF88),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          // Pass Ratings
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Ace',
-                                  const Color(0xFF00FF88),
-                                  () => _selectPassRating('ace'),
-                                  _selectedPassRating == 'ace',
+                            const SizedBox(height: 2),
+                            // Pass Ratings
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Ace',
+                                    const Color(0xFF00FF88),
+                                    () => _selectPassRating('ace'),
+                                    _selectedPassRating == 'ace',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 1),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  '3',
-                                  const Color(0xFF00FF88),
-                                  () => _selectPassRating('3'),
-                                  _selectedPassRating == '3',
+                                const SizedBox(width: 1),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    '3',
+                                    const Color(0xFF00FF88),
+                                    () => _selectPassRating('3'),
+                                    _selectedPassRating == '3',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 1),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  '2',
-                                  const Color(0xFF00E5FF),
-                                  () => _selectPassRating('2'),
-                                  _selectedPassRating == '2',
+                                const SizedBox(width: 1),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    '2',
+                                    const Color(0xFF00E5FF),
+                                    () => _selectPassRating('2'),
+                                    _selectedPassRating == '2',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 1),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  '1',
-                                  const Color(0xFFFF8800),
-                                  () => _selectPassRating('1'),
-                                  _selectedPassRating == '1',
+                                const SizedBox(width: 1),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    '1',
+                                    const Color(0xFFFF8800),
+                                    () => _selectPassRating('1'),
+                                    _selectedPassRating == '1',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 1),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  '0',
-                                  const Color(0xFFFF4444),
-                                  () => _selectPassRating('0'),
-                                  _selectedPassRating == '0',
+                                const SizedBox(width: 1),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    '0',
+                                    const Color(0xFFFF4444),
+                                    () => _selectPassRating('0'),
+                                    _selectedPassRating == '0',
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: 4),
+                  const SizedBox(width: 4),
 
-                // Attack Column
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFFFF8800),
-                        width: 2,
+                  // Attack Column
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFFF8800),
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          // Attack Title
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: const Text(
-                              'ATTACK',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFFFF8800),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            // Attack Title
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: const Text(
+                                'ATTACK',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFFFF8800),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          // Attack Results
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Kill',
-                                  const Color(0xFF00FF88),
-                                  () => _selectAttackResult('kill'),
-                                  _selectedAttackResult == 'kill',
+                            const SizedBox(height: 2),
+                            // Attack Results
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Kill',
+                                    const Color(0xFF00FF88),
+                                    () => _selectAttackResult('kill'),
+                                    _selectedAttackResult == 'kill',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'In',
-                                  const Color(0xFF00E5FF),
-                                  () => _selectAttackResult('in'),
-                                  _selectedAttackResult == 'in',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'In',
+                                    const Color(0xFF00E5FF),
+                                    () => _selectAttackResult('in'),
+                                    _selectedAttackResult == 'in',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              Expanded(
-                                child: _buildCompactButton(
-                                  'Error',
-                                  const Color(0xFFFF4444),
-                                  () => _selectAttackResult('error'),
-                                  _selectedAttackResult == 'error',
+                                const SizedBox(width: 2),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    'Error',
+                                    const Color(0xFFFF4444),
+                                    () => _selectAttackResult('error'),
+                                    _selectedAttackResult == 'error',
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             // Single Save Button
