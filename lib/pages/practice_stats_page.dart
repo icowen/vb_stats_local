@@ -449,6 +449,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedPlayer = null;
         _playerEvents = [];
         _selectedServeType = null; // Clear serve type selection
+        _selectedActionType = null; // Clear action type selection
+        _selectedServeResult = null; // Clear serve result selection
+        _selectedPassRating = null; // Clear pass rating selection
+        _selectedAttackResult = null; // Clear attack result selection
         _isLoadingPlayerStats = false;
       });
     } else {
@@ -456,6 +460,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       setState(() {
         _selectedPlayer = player;
         _selectedServeType = null; // Clear serve type selection
+        _selectedActionType = null; // Clear action type selection
+        _selectedServeResult = null; // Clear serve result selection
+        _selectedPassRating = null; // Clear pass rating selection
+        _selectedAttackResult = null; // Clear attack result selection
         _isLoadingPlayerStats = true;
       });
 
@@ -2009,13 +2017,19 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             onPressed: _selectedPlayer == null
                                 ? null
                                 : () {
-                                    setState(
-                                      () => _selectedActionType = 'serve',
-                                    );
+                                    setState(() {
+                                      _selectedActionType = 'serve';
+                                      // Reset all metadata selections
+                                      _selectedServeType = null;
+                                      _selectedServeResult = null;
+                                      _selectedPassRating = null;
+                                      _selectedAttackResult = null;
+                                    });
                                     _startCoordinateRecording('serve');
                                   },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF00E5FF),
+                              backgroundColor: Colors.transparent,
                               side: BorderSide(
                                 color: const Color(0xFF00E5FF),
                                 width: 1,
@@ -2044,13 +2058,19 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             onPressed: _selectedPlayer == null
                                 ? null
                                 : () {
-                                    setState(
-                                      () => _selectedActionType = 'pass',
-                                    );
+                                    setState(() {
+                                      _selectedActionType = 'pass';
+                                      // Reset all metadata selections
+                                      _selectedServeType = null;
+                                      _selectedServeResult = null;
+                                      _selectedPassRating = null;
+                                      _selectedAttackResult = null;
+                                    });
                                     _startCoordinateRecording('pass');
                                   },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF00FF88),
+                              backgroundColor: Colors.transparent,
                               side: BorderSide(
                                 color: const Color(0xFF00FF88),
                                 width: 1,
@@ -2079,13 +2099,19 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             onPressed: _selectedPlayer == null
                                 ? null
                                 : () {
-                                    setState(
-                                      () => _selectedActionType = 'attack',
-                                    );
+                                    setState(() {
+                                      _selectedActionType = 'attack';
+                                      // Reset all metadata selections
+                                      _selectedServeType = null;
+                                      _selectedServeResult = null;
+                                      _selectedPassRating = null;
+                                      _selectedAttackResult = null;
+                                    });
                                     _startCoordinateRecording('attack');
                                   },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFFF8800),
+                              backgroundColor: Colors.transparent,
                               side: BorderSide(
                                 color: const Color(0xFFFF8800),
                                 width: 1,
@@ -2275,57 +2301,42 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                children: [
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: 'Ace',
-                        color: const Color(0xFF00FF88),
-                        onPressed: () => _selectPassRating('ace'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                      StatButtonData(
-                        label: '3',
-                        color: const Color(0xFF00FF88),
-                        onPressed: () => _selectPassRating('3'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                    ],
+              child: StatButtonRow(
+                buttons: [
+                  StatButtonData(
+                    label: 'Ace',
+                    color: const Color(0xFF00FF88),
+                    onPressed: () => _selectPassRating('ace'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedPassRating == 'ace',
                   ),
-                  const SizedBox(height: 2),
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: '2',
-                        color: const Color(0xFF00E5FF),
-                        onPressed: () => _selectPassRating('2'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                      StatButtonData(
-                        label: '1',
-                        color: const Color(0xFFFF8800),
-                        onPressed: () => _selectPassRating('1'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                    ],
+                  StatButtonData(
+                    label: '3',
+                    color: const Color(0xFF00FF88),
+                    onPressed: () => _selectPassRating('3'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedPassRating == '3',
                   ),
-                  const SizedBox(height: 2),
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: '0',
-                        color: const Color(0xFFFF4444),
-                        onPressed: () => _selectPassRating('0'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                      StatButtonData(
-                        label: '',
-                        color: Colors.grey,
-                        onPressed: null,
-                        isDisabled: true,
-                      ),
-                    ],
+                  StatButtonData(
+                    label: '2',
+                    color: const Color(0xFF00E5FF),
+                    onPressed: () => _selectPassRating('2'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedPassRating == '2',
+                  ),
+                  StatButtonData(
+                    label: '1',
+                    color: const Color(0xFFFF8800),
+                    onPressed: () => _selectPassRating('1'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedPassRating == '1',
+                  ),
+                  StatButtonData(
+                    label: '0',
+                    color: const Color(0xFFFF4444),
+                    onPressed: () => _selectPassRating('0'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedPassRating == '0',
                   ),
                 ],
               ),
@@ -2387,40 +2398,28 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                children: [
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: 'Kill',
-                        color: const Color(0xFF00FF88),
-                        onPressed: () => _selectAttackResult('kill'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                      StatButtonData(
-                        label: 'In',
-                        color: const Color(0xFF00E5FF),
-                        onPressed: () => _selectAttackResult('in'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                    ],
+              child: StatButtonRow(
+                buttons: [
+                  StatButtonData(
+                    label: 'Kill',
+                    color: const Color(0xFF00FF88),
+                    onPressed: () => _selectAttackResult('kill'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedAttackResult == 'kill',
                   ),
-                  const SizedBox(height: 2),
-                  StatButtonRow(
-                    buttons: [
-                      StatButtonData(
-                        label: 'Error',
-                        color: const Color(0xFFFF4444),
-                        onPressed: () => _selectAttackResult('error'),
-                        isDisabled: _selectedPlayer == null,
-                      ),
-                      StatButtonData(
-                        label: '',
-                        color: Colors.grey,
-                        onPressed: null,
-                        isDisabled: true,
-                      ),
-                    ],
+                  StatButtonData(
+                    label: 'In',
+                    color: const Color(0xFF00E5FF),
+                    onPressed: () => _selectAttackResult('in'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedAttackResult == 'in',
+                  ),
+                  StatButtonData(
+                    label: 'Error',
+                    color: const Color(0xFFFF4444),
+                    onPressed: () => _selectAttackResult('error'),
+                    isDisabled: _selectedPlayer == null,
+                    isSelected: _selectedAttackResult == 'error',
                   ),
                 ],
               ),
@@ -2508,7 +2507,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Serve type saved for ${_selectedPlayer!.firstName}'),
+            content: Text('Serve type saved for ${tempEvent.player.firstName}'),
             backgroundColor: const Color(0xFF00E5FF),
           ),
         );
@@ -2628,7 +2627,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Pass rating saved for ${_selectedPlayer!.firstName}',
+              'Pass rating saved for ${tempEvent.player.firstName}',
             ),
             backgroundColor: const Color(0xFF00FF88),
           ),
@@ -2691,7 +2690,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Attack result saved for ${_selectedPlayer!.firstName}',
+              'Attack result saved for ${tempEvent.player.firstName}',
             ),
             backgroundColor: const Color(0xFFFF8800),
           ),
