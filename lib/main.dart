@@ -94,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Match> _matches = [];
   List<Practice> _practices = [];
   bool _isLoading = true;
-  String? _expandedTile;
+  String? _expandedTile = 'practices';
 
   @override
   void initState() {
@@ -127,6 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
       final teams = await _teamService.getAllTeams();
       final matches = await _matchService.getAllMatches();
       final practices = await _practiceService.getAllPractices();
+
+      // Sort practices by date (newest to oldest)
+      practices.sort((a, b) => b.date.compareTo(a.date));
 
       setState(() {
         _players = players;
@@ -244,7 +247,9 @@ class _MyHomePageState extends State<MyHomePage> {
     VoidCallback onTap,
     VoidCallback onAdd,
   ) {
+    final isSelected = _expandedTile == title.toLowerCase();
     return Card(
+      color: isSelected ? color.withOpacity(0.1) : null,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -297,15 +302,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildExpandedContent() {
-    if (_expandedTile == null) {
-      return const Center(
-        child: Text(
-          'Select a category above to view items',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      );
-    }
-
     switch (_expandedTile) {
       case 'players':
         return _buildPlayersList();
@@ -314,9 +310,8 @@ class _MyHomePageState extends State<MyHomePage> {
       case 'matches':
         return _buildMatchesList();
       case 'practices':
-        return _buildPracticesList();
       default:
-        return const SizedBox.shrink();
+        return _buildPracticesList();
     }
   }
 
