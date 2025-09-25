@@ -1134,6 +1134,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     Player selectedPlayer = event.player;
     Map<String, dynamic> formData = Map.from(event.metadata);
 
+    // Initialize coordinate editing state
+    double? editStartX = event.fromX;
+    double? editStartY = event.fromY;
+    double? editEndX = event.toX;
+    double? editEndY = event.toY;
+    bool editHasStartPoint = event.hasFromCoordinates;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1215,6 +1222,129 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                       formData,
                       setModalState,
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Coordinate editing section
+                    const Text(
+                      'Coordinates',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Clear coordinates button
+                    if (editStartX != null || editEndX != null)
+                      TextButton(
+                        onPressed: () {
+                          setModalState(() {
+                            editStartX = null;
+                            editStartY = null;
+                            editEndX = null;
+                            editEndY = null;
+                            editHasStartPoint = false;
+                          });
+                        },
+                        child: const Text('Clear Coordinates'),
+                      ),
+
+                    const SizedBox(height: 8),
+
+                    // Volleyball Court
+                    Center(
+                      child: VolleyballCourt(
+                        startX: editStartX,
+                        startY: editStartY,
+                        endX: editEndX,
+                        endY: editEndY,
+                        hasStartPoint: editHasStartPoint,
+                        selectedAction: selectedEventType,
+                        isRecording: true, // Always allow editing
+                        onCourtTap: (x, y) {
+                          setModalState(() {
+                            // Check if tapping near existing start point
+                            if (editStartX != null && editStartY != null) {
+                              final courtOffsetX = (660 - 480) / 2; // 90 pixels
+                              final courtOffsetY =
+                                  (480 - 240) / 2; // 120 pixels
+                              final startXPos =
+                                  courtOffsetX + (editStartX! / 60.0) * 480;
+                              final startYPos =
+                                  courtOffsetY + (editStartY! / 30.0) * 240;
+
+                              // Convert tap coordinates to court coordinates
+                              final tapCourtX = courtOffsetX + (x / 60.0) * 480;
+                              final tapCourtY = courtOffsetY + (y / 30.0) * 240;
+
+                              final distanceToStart =
+                                  ((tapCourtX - startXPos) *
+                                      (tapCourtX - startXPos) +
+                                  (tapCourtY - startYPos) *
+                                      (tapCourtY - startYPos));
+
+                              if (distanceToStart < 400) {
+                                // Within ~20 pixels
+                                // Remove start point
+                                editStartX = null;
+                                editStartY = null;
+                                editHasStartPoint = false;
+                                return;
+                              }
+                            }
+
+                            // Check if tapping near existing end point
+                            if (editEndX != null && editEndY != null) {
+                              final courtOffsetX = (660 - 480) / 2; // 90 pixels
+                              final courtOffsetY =
+                                  (480 - 240) / 2; // 120 pixels
+                              final endXPos =
+                                  courtOffsetX + (editEndX! / 60.0) * 480;
+                              final endYPos =
+                                  courtOffsetY + (editEndY! / 30.0) * 240;
+
+                              // Convert tap coordinates to court coordinates
+                              final tapCourtX = courtOffsetX + (x / 60.0) * 480;
+                              final tapCourtY = courtOffsetY + (y / 30.0) * 240;
+
+                              final distanceToEnd =
+                                  ((tapCourtX - endXPos) *
+                                      (tapCourtX - endXPos) +
+                                  (tapCourtY - endYPos) *
+                                      (tapCourtY - endYPos));
+
+                              if (distanceToEnd < 400) {
+                                // Within ~20 pixels
+                                // Remove end point
+                                editEndX = null;
+                                editEndY = null;
+                                return;
+                              }
+                            }
+
+                            // If not tapping on existing points, set new coordinates
+                            if (!editHasStartPoint) {
+                              editStartX = x;
+                              editStartY = y;
+                              editHasStartPoint = true;
+                            } else {
+                              editEndX = x;
+                              editEndY = y;
+                            }
+                          });
+                        },
+                        onClear: () {
+                          setModalState(() {
+                            editStartX = null;
+                            editStartY = null;
+                            editEndX = null;
+                            editEndY = null;
+                            editHasStartPoint = false;
+                          });
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1230,6 +1360,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                     selectedPlayer,
                     selectedEventType,
                     formData,
+                    editStartX,
+                    editStartY,
+                    editEndX,
+                    editEndY,
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00E5FF),
@@ -1489,6 +1623,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     Player newPlayer,
     String newEventType,
     Map<String, dynamic> newMetadata,
+    double? newFromX,
+    double? newFromY,
+    double? newToX,
+    double? newToY,
   ) async {
     try {
       // Create updated event
@@ -1496,6 +1634,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         player: newPlayer,
         type: EventType.values.firstWhere((e) => e.name == newEventType),
         metadata: newMetadata,
+        fromX: newFromX,
+        fromY: newFromY,
+        toX: newToX,
+        toY: newToY,
       );
 
       // Add to undo stack
