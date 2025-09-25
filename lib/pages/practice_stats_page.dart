@@ -2502,6 +2502,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     final team = widget.practice.team;
 
     // Normalize coordinates so first point is always on left half
+    // Apply coordinate normalization only when saving
     final normalizedCoords = _normalizeCoordinates(
       _startX,
       _startY,
@@ -2674,17 +2675,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         // Keep recording state true so points remain visible
       }
 
-      // Calculate normalized coordinates for saving
-      final normalizedCoords = _normalizeCoordinates(
-        _displayStartX,
-        _displayStartY,
-        _displayEndX,
-        _displayEndY,
-      );
-      _startX = normalizedCoords['fromX'];
-      _startY = normalizedCoords['fromY'];
-      _endX = normalizedCoords['toX'];
-      _endY = normalizedCoords['toY'];
+      // Store display coordinates directly (no flipping for display)
+      _startX = _displayStartX;
+      _startY = _displayStartY;
+      _endX = _displayEndX;
+      _endY = _displayEndY;
     });
   }
 
