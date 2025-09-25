@@ -2711,10 +2711,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     // If the first point is on the right side (X > 0.5), flip both coordinates
     if (startX > 0.5) {
       return {
-        'fromX': 1.0 - endX, // Flip X: 1.0 - endX
-        'fromY': 1.0 - endY, // Flip Y: 1.0 - endY
-        'toX': 1.0 - startX, // Flip X: 1.0 - startX
-        'toY': 1.0 - startY, // Flip Y: 1.0 - startY
+        'fromX': 1.0 - startX, // Flip START point's X
+        'fromY': 1.0 - startY, // Flip START point's Y
+        'toX': 1.0 - endX, // Flip END point's X
+        'toY': 1.0 - endY, // Flip END point's Y
       };
     } else {
       // First point is already on the left, keep as is
