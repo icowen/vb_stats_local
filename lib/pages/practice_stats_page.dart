@@ -998,33 +998,109 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
           title: Text(
-            'Event Options',
+            'Event Details',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Player: ${event.player.fullName}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Type: ${event.type.displayName}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Time: ${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
+          content: SizedBox(
+            width: 900,
+            child: Row(
+              children: [
+                // Left column - Event details
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildEventDetailRow('Player', event.player.fullName),
+                        _buildEventDetailRow('Type', event.type.displayName),
+                        _buildEventDetailRow(
+                          'Time',
+                          '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
+                        ),
+                        _buildEventDetailRow(
+                          'Date',
+                          '${event.timestamp.month}/${event.timestamp.day}/${event.timestamp.year}',
+                        ),
+
+                        // Metadata
+                        if (event.metadata.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Details:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ...event.metadata.entries.map(
+                            (entry) => _buildEventDetailRow(
+                              _formatMetadataKey(entry.key),
+                              entry.value.toString(),
+                            ),
+                          ),
+                        ],
+
+                        // Coordinates
+                        if (event.hasCoordinates) ...[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Coordinates:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (event.hasFromCoordinates)
+                            _buildEventDetailRow(
+                              'Start',
+                              '${event.fromX!.toStringAsFixed(1)}ft, ${event.fromY!.toStringAsFixed(1)}ft',
+                            ),
+                          if (event.hasToCoordinates)
+                            _buildEventDetailRow(
+                              'End',
+                              '${event.toX!.toStringAsFixed(1)}ft, ${event.toY!.toStringAsFixed(1)}ft',
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Right column - Court visualization
+                if (event.hasCoordinates)
+                  Column(
+                    children: [
+                      const Text(
+                        'Court Position',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      VolleyballCourt(
+                        startX: event.fromX,
+                        startY: event.fromY,
+                        endX: event.toX,
+                        endY: event.toY,
+                        hasStartPoint: event.hasFromCoordinates,
+                        selectedAction: event.type.name,
+                        isRecording: false,
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: const Text('Close'),
             ),
             TextButton(
               onPressed: () {
@@ -2367,6 +2443,37 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Set attack result
       _selectedAttackResult = result;
     });
+  }
+
+  Widget _buildEventDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            ),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
+        ],
+      ),
+    );
+  }
+
+  String _formatMetadataKey(String key) {
+    // Convert snake_case to Title Case
+    return key
+        .split('_')
+        .map(
+          (word) => word.isNotEmpty
+              ? word[0].toUpperCase() + word.substring(1)
+              : word,
+        )
+        .join(' ');
   }
 
   void _startCoordinateRecording(String action) {

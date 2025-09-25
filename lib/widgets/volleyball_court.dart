@@ -303,8 +303,8 @@ class VolleyballCourtPainter extends CustomPainter {
       attackLinePaint,
     );
 
-    // Draw coordinate points if recording
-    if (isRecording) {
+    // Draw coordinate points if they exist
+    if (startX != null || endX != null) {
       // Draw start point if available
       if (hasStartPoint && startX != null && startY != null) {
         final courtOffsetX = (size.width - 480) / 2; // 90 pixels
