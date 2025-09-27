@@ -63,28 +63,24 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: SizedBox(
-        height: 400,
-        child: Row(
-          children: [
-            // Sticky Player Info Columns
-            Container(
-              width:
-                  widget.columnWidths['Player']! +
-                  widget.columnWidths['Jersey']!,
-              child: _buildStickyPlayerInfoColumn(),
+      child: Row(
+        children: [
+          // Sticky Player Info Columns
+          Container(
+            width:
+                widget.columnWidths['Player']! + widget.columnWidths['Jersey']!,
+            child: _buildStickyPlayerInfoColumn(),
+          ),
+          // Vertical border between player info and stats
+          Container(width: 1, color: Colors.grey),
+          // Scrollable Stats Columns
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _buildScrollableStatsColumns(),
             ),
-            // Vertical border between player info and stats
-            Container(width: 1, color: Colors.grey),
-            // Scrollable Stats Columns
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: _buildScrollableStatsColumns(),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -489,7 +489,13 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 16),
-                  _buildPlayerStatsTable(columnWidths),
+                  SizedBox(
+                    height:
+                        60 +
+                        (_practicePlayers.length * 40)
+                            .toDouble(), // Header + rows
+                    child: _buildPlayerStatsTable(columnWidths),
+                  ),
                 ],
               ),
             ),
