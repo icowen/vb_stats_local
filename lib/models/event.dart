@@ -193,7 +193,8 @@ enum EventType {
   attack('Attack'),
   block('Block'),
   dig('Dig'),
-  set('Set');
+  set('Set'),
+  freeball('Freeball');
 
   const EventType(this.displayName);
   final String displayName;

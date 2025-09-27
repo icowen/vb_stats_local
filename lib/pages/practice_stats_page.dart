@@ -78,6 +78,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   // Pass type selection (single selection)
   String? _selectedPassType;
 
+  // Freeball action selection
+  String? _selectedFreeballAction; // 'sent' or 'received'
+  String? _selectedFreeballResult; // 'good' or 'bad' (for received only)
+
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
 
@@ -455,6 +459,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedPassType = null; // Clear pass type selection
         _selectedAttackResult = null; // Clear attack result selection
         _selectedAttackMetadata.clear(); // Clear attack metadata
+        _selectedFreeballAction = null; // Clear freeball action selection
+        _selectedFreeballResult = null; // Clear freeball result selection
         // Keep coordinates when unselecting player
         _isLoadingPlayerStats = false;
       });
@@ -469,6 +475,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedPassType = null; // Clear pass type selection
         _selectedAttackResult = null; // Clear attack result selection
         _selectedAttackMetadata.clear(); // Clear attack metadata
+        _selectedFreeballAction = null; // Clear freeball action selection
+        _selectedFreeballResult = null; // Clear freeball result selection
         // Keep coordinates when selecting new player
         _isLoadingPlayerStats = true;
       });
@@ -2085,334 +2093,431 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         padding: const EdgeInsets.all(4.0),
         child: Column(
           children: [
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  // Serve Column
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFF00E5FF),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            // Serve Title
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: const Text(
-                                'SERVE',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF00E5FF),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
+            Column(
+              children: [
+                // First Row: Serve and Pass
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      // Serve Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF00E5FF),
+                              width: 2,
                             ),
-                            const SizedBox(height: 2),
-                            // Serve Types
-                            Row(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Float',
-                                    const Color(0xFF00E5FF),
-                                    () => _selectServeType('float'),
-                                    _selectedServeType == 'float',
+                                // Serve Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'SERVE',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF00E5FF),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Hybrid',
-                                    const Color(0xFF00E5FF),
-                                    () => _selectServeType('hybrid'),
-                                    _selectedServeType == 'hybrid',
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Spin',
-                                    const Color(0xFF00E5FF),
-                                    () => _selectServeType('spin'),
-                                    _selectedServeType == 'spin',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            // Serve Results
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Ace',
-                                    const Color(0xFF00FF88),
-                                    () => _selectServeResult('ace'),
-                                    _selectedServeResult == 'ace',
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'In',
-                                    const Color(0xFF00FF88),
-                                    () => _selectServeResult('in'),
-                                    _selectedServeResult == 'in',
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Error',
-                                    const Color(0xFFFF4444),
-                                    () => _selectServeResult('error'),
-                                    _selectedServeResult == 'error',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  // Pass Column
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFF00FF88),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            // Pass Title
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: const Text(
-                                'PASS',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF00FF88),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Pass Ratings
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Ace',
-                                    const Color(0xFF00FF88),
-                                    () => _selectPassRating('ace'),
-                                    _selectedPassRating == 'ace',
-                                  ),
-                                ),
-                                const SizedBox(width: 1),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    '3',
-                                    const Color(0xFF00FF88),
-                                    () => _selectPassRating('3'),
-                                    _selectedPassRating == '3',
-                                  ),
-                                ),
-                                const SizedBox(width: 1),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    '2',
-                                    const Color(0xFF00E5FF),
-                                    () => _selectPassRating('2'),
-                                    _selectedPassRating == '2',
-                                  ),
-                                ),
-                                const SizedBox(width: 1),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    '1',
-                                    const Color(0xFFFF8800),
-                                    () => _selectPassRating('1'),
-                                    _selectedPassRating == '1',
-                                  ),
-                                ),
-                                const SizedBox(width: 1),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    '0',
-                                    const Color(0xFFFF4444),
-                                    () => _selectPassRating('0'),
-                                    _selectedPassRating == '0',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // Pass Type
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildPassTypeButton(
-                                  'Overhand',
-                                  'overhand',
-                                  const Color(0xFF00FF88),
-                                ),
-                                _buildPassTypeButton(
-                                  'Platform',
-                                  'platform',
-                                  const Color(0xFF00FF88),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  // Attack Column
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFFFF8800),
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            // Attack Title
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: const Text(
-                                'ATTACK',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFFFF8800),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            // Attack Results
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Kill',
-                                    const Color(0xFF00FF88),
-                                    () => _selectAttackResult('kill'),
-                                    _selectedAttackResult == 'kill',
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'In',
-                                    const Color(0xFF00E5FF),
-                                    () => _selectAttackResult('in'),
-                                    _selectedAttackResult == 'in',
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: _buildCompactButton(
-                                    'Error',
-                                    const Color(0xFFFF4444),
-                                    () => _selectAttackResult('error'),
-                                    _selectedAttackResult == 'error',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // Attack Metadata
-                            Column(
-                              children: [
+                                const SizedBox(height: 2),
+                                // Serve Types
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    _buildMetadataButton(
-                                      'Tip',
-                                      'tip',
-                                      const Color(0xFF9C27B0),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Float',
+                                        const Color(0xFF00E5FF),
+                                        () => _selectServeType('float'),
+                                        _selectedServeType == 'float',
+                                      ),
                                     ),
-                                    _buildMetadataButton(
-                                      'Shot',
-                                      'shot',
-                                      const Color(0xFF2196F3),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Hybrid',
+                                        const Color(0xFF00E5FF),
+                                        () => _selectServeType('hybrid'),
+                                        _selectedServeType == 'hybrid',
+                                      ),
                                     ),
-                                    _buildMetadataButton(
-                                      'Blocked',
-                                      'blocked',
-                                      const Color(0xFFFF9800),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Spin',
+                                        const Color(0xFF00E5FF),
+                                        () => _selectServeType('spin'),
+                                        _selectedServeType == 'spin',
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
+                                // Serve Results
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    _buildMetadataButton(
-                                      'Recycle',
-                                      'recycle',
-                                      const Color(0xFF4CAF50),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Ace',
+                                        const Color(0xFF00FF88),
+                                        () => _selectServeResult('ace'),
+                                        _selectedServeResult == 'ace',
+                                      ),
                                     ),
-                                    _buildMetadataButton(
-                                      'Tool',
-                                      'tool',
-                                      const Color(0xFF607D8B),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'In',
+                                        const Color(0xFF00FF88),
+                                        () => _selectServeResult('in'),
+                                        _selectedServeResult == 'in',
+                                      ),
                                     ),
-                                    _buildMetadataButton(
-                                      'Deflected',
-                                      'deflected',
-                                      const Color(0xFFE91E63),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Error',
+                                        const Color(0xFFFF4444),
+                                        () => _selectServeResult('error'),
+                                        _selectedServeResult == 'error',
+                                      ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+
+                      const SizedBox(width: 4),
+
+                      // Pass Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF00FF88),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                // Pass Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'PASS',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF00FF88),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Pass Ratings
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Ace',
+                                        const Color(0xFF00FF88),
+                                        () => _selectPassRating('ace'),
+                                        _selectedPassRating == 'ace',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 1),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        '3',
+                                        const Color(0xFF00FF88),
+                                        () => _selectPassRating('3'),
+                                        _selectedPassRating == '3',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 1),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        '2',
+                                        const Color(0xFF00E5FF),
+                                        () => _selectPassRating('2'),
+                                        _selectedPassRating == '2',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 1),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        '1',
+                                        const Color(0xFFFF8800),
+                                        () => _selectPassRating('1'),
+                                        _selectedPassRating == '1',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 1),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        '0',
+                                        const Color(0xFFFF4444),
+                                        () => _selectPassRating('0'),
+                                        _selectedPassRating == '0',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Pass Type
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildPassTypeButton(
+                                      'Overhand',
+                                      'overhand',
+                                      const Color(0xFF00FF88),
+                                    ),
+                                    _buildPassTypeButton(
+                                      'Platform',
+                                      'platform',
+                                      const Color(0xFF00FF88),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 4),
+                // Second Row: Attack and Freeball
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      // Attack Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFFFF8800),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                // Attack Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'ATTACK',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFFFF8800),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Attack Results
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Kill',
+                                        const Color(0xFF00FF88),
+                                        () => _selectAttackResult('kill'),
+                                        _selectedAttackResult == 'kill',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'In',
+                                        const Color(0xFF00E5FF),
+                                        () => _selectAttackResult('in'),
+                                        _selectedAttackResult == 'in',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Error',
+                                        const Color(0xFFFF4444),
+                                        () => _selectAttackResult('error'),
+                                        _selectedAttackResult == 'error',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Attack Metadata
+                                Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildMetadataButton(
+                                          'Tip',
+                                          'tip',
+                                          const Color(0xFF9C27B0),
+                                        ),
+                                        _buildMetadataButton(
+                                          'Shot',
+                                          'shot',
+                                          const Color(0xFF2196F3),
+                                        ),
+                                        _buildMetadataButton(
+                                          'Blocked',
+                                          'blocked',
+                                          const Color(0xFFFF9800),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildMetadataButton(
+                                          'Recycle',
+                                          'recycle',
+                                          const Color(0xFF4CAF50),
+                                        ),
+                                        _buildMetadataButton(
+                                          'Tool',
+                                          'tool',
+                                          const Color(0xFF607D8B),
+                                        ),
+                                        _buildMetadataButton(
+                                          'Deflected',
+                                          'deflected',
+                                          const Color(0xFFE91E63),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
+
+                      // Freeball Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF9C27B0),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              children: [
+                                // Freeball Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'FREEBALL',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF9C27B0),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Freeball Actions
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Sent',
+                                        const Color(0xFF9C27B0),
+                                        () => _selectFreeballAction('sent'),
+                                        _selectedFreeballAction == 'sent',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Received',
+                                        const Color(0xFF9C27B0),
+                                        () => _selectFreeballAction('received'),
+                                        _selectedFreeballAction == 'received',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                // Freeball Result (only for received)
+                                if (_selectedFreeballAction == 'received')
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      _buildFreeballResultButton(
+                                        'Good',
+                                        'good',
+                                        const Color(0xFF00FF88),
+                                      ),
+                                      _buildFreeballResultButton(
+                                        'Bad',
+                                        'bad',
+                                        const Color(0xFFFF4444),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             // Single Save Button
@@ -2547,6 +2652,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     );
   }
 
+  Widget _buildFreeballResultButton(String label, String value, Color color) {
+    final bool isDisabled = _selectedPlayer == null;
+    final bool isSelected = _selectedFreeballResult == value;
+    final Color buttonColor = isDisabled ? Colors.grey : color;
+
+    return OutlinedButton(
+      onPressed: isDisabled ? null : () => _selectFreeballResult(value),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDisabled ? Colors.grey : buttonColor,
+        backgroundColor: isSelected
+            ? buttonColor.withOpacity(0.3)
+            : Colors.transparent,
+        side: BorderSide(
+          color: isDisabled
+              ? Colors.grey
+              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+          width: isSelected ? 2 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 20),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
+          color: isDisabled ? Colors.grey : buttonColor,
+        ),
+      ),
+    );
+  }
+
   bool _canSaveAction() {
     if (_selectedPlayer == null) {
       return false;
@@ -2560,6 +2698,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       return true;
     }
     if (_selectedAttackResult != null) {
+      return true;
+    }
+    if (_selectedFreeballAction != null) {
       return true;
     }
 
@@ -2576,6 +2717,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedAttackResult != null) {
       return const Color(0xFFFF8800); // Orange for attack
     }
+    if (_selectedFreeballAction != null) {
+      return const Color(0xFF9C27B0); // Purple for freeball
+    }
     return Colors.grey;
   }
 
@@ -2589,6 +2733,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedAttackResult != null) {
       return 'Save Attack';
     }
+    if (_selectedFreeballAction != null) {
+      return 'Save Freeball';
+    }
     return 'Select Action';
   }
 
@@ -2599,6 +2746,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _savePassAction();
     } else if (_selectedAttackResult != null) {
       _saveAttackAction();
+    } else if (_selectedFreeballAction != null) {
+      _saveFreeballAction();
     }
   }
 
@@ -2609,6 +2758,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _selectedPassType = null;
       _selectedAttackResult = null;
       _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
       _selectedAttackMetadata.clear();
       _selectedServeResult = null;
 
@@ -2706,6 +2857,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _selectedPassType = null;
       _selectedAttackResult = null;
       _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
 
       // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
@@ -2758,6 +2911,35 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       } else {
         // Select the new type
         _selectedPassType = passType;
+      }
+    });
+  }
+
+  void _selectFreeballAction(String action) {
+    setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+
+      // Set freeball action
+      _selectedFreeballAction = action;
+      // Clear result when switching actions
+      _selectedFreeballResult = null;
+    });
+  }
+
+  void _selectFreeballResult(String result) {
+    setState(() {
+      if (_selectedFreeballResult == result) {
+        // If the same result is selected, deselect it
+        _selectedFreeballResult = null;
+      } else {
+        // Select the new result
+        _selectedFreeballResult = result;
       }
     });
   }
@@ -3023,6 +3205,89 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving attack action: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveFreeballAction() async {
+    if (_selectedPlayer == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
+    // Create metadata map with action
+    final metadata = <String, dynamic>{
+      'action': _selectedFreeballAction ?? 'unknown',
+    };
+
+    // Add result if selected (for received freeballs)
+    if (_selectedFreeballResult != null) {
+      metadata['result'] = _selectedFreeballResult;
+    }
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.freeball,
+      metadata: metadata,
+      timestamp: DateTime.now(),
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
+        _selectedFreeballAction = null;
+        _selectedFreeballResult = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Freeball saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving freeball action: $e'),
             backgroundColor: Colors.red,
           ),
         );
