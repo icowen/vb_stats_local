@@ -57,17 +57,34 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
 
           // Filter by metadata (if any metadata selected)
           if (_selectedMetadata.isNotEmpty) {
-            // All selected metadata must match (AND logic)
+            // Group metadata selections by key
+            final Map<String, Set<String>> groupedMetadata = {};
             for (final metadataSelection in _selectedMetadata) {
               // Parse "key:value" format
               final parts = metadataSelection.split(':');
               if (parts.length == 2) {
                 final key = parts[0];
                 final value = parts[1];
-                if (!event.metadata.containsKey(key) ||
-                    event.metadata[key].toString() != value) {
-                  return false; // This metadata doesn't match, exclude event
-                }
+                groupedMetadata.putIfAbsent(key, () => <String>{});
+                groupedMetadata[key]!.add(value);
+              }
+            }
+
+            // Check each metadata group (AND logic between groups)
+            for (final entry in groupedMetadata.entries) {
+              final key = entry.key;
+              final selectedValues = entry.value;
+
+              // Check if event has this metadata key
+              if (!event.metadata.containsKey(key)) {
+                return false; // Event doesn't have this metadata key
+              }
+
+              final eventValue = event.metadata[key].toString();
+
+              // Check if event value matches any of the selected values for this key (OR logic within group)
+              if (!selectedValues.contains(eventValue)) {
+                return false; // Event value doesn't match any selected value for this key
               }
             }
           }
@@ -728,10 +745,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Left side - Filters
-            Expanded(
-              flex: 2,
-              child: _buildFiltersSection(),
-            ),
+            Expanded(flex: 2, child: _buildFiltersSection()),
             const SizedBox(width: 16),
             // Right side - Court
             Expanded(
@@ -767,121 +781,117 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              Text(
-                'Action Type:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+            Text(
+              'Action Type:',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: EventType.values.map((actionType) {
+                final isSelected = _selectedActionType == actionType;
+                final color = _getActionTypeColor(actionType);
+                return OutlinedButton(
+                  onPressed: () => _toggleActionType(actionType),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isSelected ? color : Colors.grey[600],
+                    backgroundColor: isSelected
+                        ? color.withOpacity(0.2)
+                        : Colors.transparent,
+                    side: BorderSide(
+                      color: isSelected ? color : color.withOpacity(0.5),
+                      width: isSelected ? 2 : 1,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: Text(
+                    actionType.displayName,
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            // Metadata Filters
+            if (_selectedActionType != null) ...[
+              const SizedBox(height: 12),
               Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: EventType.values.map((actionType) {
-                  final isSelected = _selectedActionType == actionType;
-                  final color = _getActionTypeColor(actionType);
-                  return OutlinedButton(
-                    onPressed: () => _toggleActionType(actionType),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isSelected ? color : Colors.grey[600],
-                      backgroundColor: isSelected
-                          ? color.withOpacity(0.2)
-                          : Colors.transparent,
-                      side: BorderSide(
-                        color: isSelected ? color : color.withOpacity(0.5),
-                        width: isSelected ? 2 : 1,
+                spacing: 16,
+                runSpacing: 8,
+                children: _getAvailableMetadataGroups().entries.map((entry) {
+                  final groupName = entry.key;
+                  final values = entry.value.toList();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        groupName.toUpperCase(),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: values.map((value) {
+                          final isSelected = _selectedMetadata.contains(
+                            '$groupName:$value',
+                          );
+                          return OutlinedButton(
+                            onPressed: () => _toggleMetadata(groupName, value),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isSelected
+                                  ? const Color(0xFF00FF88)
+                                  : Colors.grey[600],
+                              backgroundColor: isSelected
+                                  ? const Color(0xFF00FF88).withOpacity(0.2)
+                                  : Colors.transparent,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? const Color(0xFF00FF88)
+                                    : const Color(0xFF00FF88).withOpacity(0.5),
+                                width: isSelected ? 2 : 1,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              minimumSize: const Size(0, 28),
+                            ),
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 11,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      minimumSize: const Size(0, 32),
-                    ),
-                    child: Text(
-                      actionType.displayName,
-                      style: TextStyle(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                    ),
+                    ],
                   );
                 }).toList(),
               ),
-
-              // Metadata Filters
-              if (_selectedActionType != null) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 8,
-                  children: _getAvailableMetadataGroups().entries.map((entry) {
-                    final groupName = entry.key;
-                    final values = entry.value.toList();
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          groupName.toUpperCase(),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: values.map((value) {
-                            final isSelected = _selectedMetadata.contains(
-                              '$groupName:$value',
-                            );
-                            return OutlinedButton(
-                              onPressed: () =>
-                                  _toggleMetadata(groupName, value),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: isSelected
-                                    ? const Color(0xFF00FF88)
-                                    : Colors.grey[600],
-                                backgroundColor: isSelected
-                                    ? const Color(0xFF00FF88).withOpacity(0.2)
-                                    : Colors.transparent,
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? const Color(0xFF00FF88)
-                                      : const Color(
-                                          0xFF00FF88,
-                                        ).withOpacity(0.5),
-                                  width: isSelected ? 2 : 1,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 6,
-                                ),
-                                minimumSize: const Size(0, 28),
-                              ),
-                              child: Text(
-                                value,
-                                style: TextStyle(
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ],
             ],
-          ),
+          ],
+        ),
 
         const SizedBox(height: 16),
 
@@ -889,85 +899,79 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              Text(
-                'Players:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+            Text(
+              'Players:',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
 
-              // Player Selection Button
-              GestureDetector(
-                onTap: () => _showPlayerSelectionModal(),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[400]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Select Players (${_selectedPlayers.length} selected)',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
+            // Player Selection Button
+            GestureDetector(
+              onTap: () => _showPlayerSelectionModal(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[400]!),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Select Players (${_selectedPlayers.length} selected)',
+                        style: TextStyle(color: Colors.grey[600]),
                       ),
-                      Icon(Icons.person_add, color: Colors.grey[600]),
-                    ],
-                  ),
+                    ),
+                    Icon(Icons.person_add, color: Colors.grey[600]),
+                  ],
                 ),
               ),
+            ),
 
-              // Selected Players Tiles (below the button)
-              if (_selectedPlayers.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: _selectedPlayers.map((player) {
-                    return GestureDetector(
-                      onTap: () => _togglePlayer(player),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          border: Border.all(
-                            color: Colors.blue.withOpacity(0.3),
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              player.fullName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue[700],
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.close,
-                              size: 16,
+            // Selected Players Tiles (below the button)
+            if (_selectedPlayers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _selectedPlayers.map((player) {
+                  return GestureDetector(
+                    onTap: () => _togglePlayer(player),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            player.fullName,
+                            style: TextStyle(
+                              fontSize: 12,
                               color: Colors.blue[700],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.close, size: 16, color: Colors.blue[700]),
+                        ],
                       ),
-                    );
-                  }).toList(),
-                ),
-              ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ],
         ),
       ],
