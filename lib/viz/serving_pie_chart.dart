@@ -204,32 +204,62 @@ class ServingPieChart extends StatelessWidget {
     BuildContext context,
     Map<String, Map<String, int>> servingResults,
   ) {
+    // Calculate totals for "All" bar
+    int totalMakes = 0;
+    int totalErrors = 0;
+    int totalAttempts = 0;
+
+    for (final results in servingResults.values) {
+      totalMakes += results['in'] ?? 0;
+      totalErrors += results['error'] ?? 0;
+      totalAttempts += results['total'] ?? 0;
+    }
+
+    final allMakePercentage = totalAttempts > 0
+        ? totalMakes / totalAttempts
+        : 0.0;
+    final allMissPercentage = totalAttempts > 0
+        ? totalErrors / totalAttempts
+        : 0.0;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: servingResults.entries.map((entry) {
-              final serveType = entry.key;
-              final results = entry.value;
-              final total = results['total'] ?? 0;
-              final inCount = results['in'] ?? 0;
-              final errorCount = results['error'] ?? 0;
-
-              // Calculate actual percentages for this serve type
-              final makePercentage = total > 0 ? inCount / total : 0.0;
-              final missPercentage = total > 0 ? errorCount / total : 0.0;
-
-              return _buildBarChartBar(
+            children: [
+              // Add "All" bar first
+              _buildBarChartBar(
                 context,
-                serveType,
-                makePercentage,
-                missPercentage,
-                inCount,
-                errorCount,
-              );
-            }).toList(),
+                'all',
+                allMakePercentage,
+                allMissPercentage,
+                totalMakes,
+                totalErrors,
+              ),
+              // Then individual serve type bars
+              ...servingResults.entries.map((entry) {
+                final serveType = entry.key;
+                final results = entry.value;
+                final total = results['total'] ?? 0;
+                final inCount = results['in'] ?? 0;
+                final errorCount = results['error'] ?? 0;
+
+                // Calculate actual percentages for this serve type
+                final makePercentage = total > 0 ? inCount / total : 0.0;
+                final missPercentage = total > 0 ? errorCount / total : 0.0;
+
+                return _buildBarChartBar(
+                  context,
+                  serveType,
+                  makePercentage,
+                  missPercentage,
+                  inCount,
+                  errorCount,
+                );
+              }).toList(),
+            ],
           ),
         ),
       ],
@@ -244,7 +274,12 @@ class ServingPieChart extends StatelessWidget {
     int inCount,
     int errorCount,
   ) {
-    final labels = {'float': 'Float', 'hybrid': 'Hybrid', 'spin': 'Spin'};
+    final labels = {
+      'float': 'Float',
+      'hybrid': 'Hybrid',
+      'spin': 'Spin',
+      'all': 'All',
+    };
 
     return Column(
       mainAxisSize: MainAxisSize.min,
