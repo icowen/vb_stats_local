@@ -33,7 +33,6 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   Set<String> _selectedMetadata = {}; // Format: "key:value"
   Set<Player> _selectedPlayers = {};
   List<Event> _displayedEvents = [];
-  bool _isPlayerDropdownOpen = false;
 
   String _formatHitPercentage(double hitPercentage) {
     if (hitPercentage >= 1.0) {
@@ -940,99 +939,28 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                 const SizedBox(height: 8),
               ],
 
-              // Player Selection Multi-Dropdown
+              // Player Selection Button
               GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isPlayerDropdownOpen = !_isPlayerDropdownOpen;
-                  });
-                },
+                onTap: () => _showPlayerSelectionModal(),
                 child: Container(
                   width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[400]!),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Add players (all if none selected)',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ),
-                            Icon(
-                              _isPlayerDropdownOpen
-                                  ? Icons.arrow_drop_up
-                                  : Icons.arrow_drop_down,
-                              color: Colors.grey[600],
-                            ),
-                          ],
+                      Expanded(
+                        child: Text(
+                          'Select Players (${_selectedPlayers.length} selected)',
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
                       ),
-                      if (_isPlayerDropdownOpen) ...[
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: Colors.grey[300]!),
-                            ),
-                          ),
-                          child: Column(
-                            children: _practicePlayers.map((player) {
-                              final isSelected = _selectedPlayers.contains(
-                                player,
-                              );
-                              return InkWell(
-                                onTap: () => _togglePlayer(player),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isSelected
-                                            ? Icons.check_box
-                                            : Icons.check_box_outline_blank,
-                                        color: isSelected
-                                            ? Colors.blue[600]
-                                            : Colors.grey[400],
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          player.fullName,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.blue[700]
-                                                : Colors.grey[700],
-                                            fontSize: 14,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w500
-                                                : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
+                      Icon(Icons.person_add, color: Colors.grey[600]),
                     ],
                   ),
                 ),
@@ -1041,6 +969,96 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showPlayerSelectionModal() {
+    // Create a copy of the current selection for the modal
+    Set<Player> tempSelectedPlayers = Set.from(_selectedPlayers);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: Text('Select Players'),
+              content: Container(
+                width: double.maxFinite,
+                height: 400,
+                child: Column(
+                  children: [
+                    // Players List
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _practicePlayers.length,
+                        itemBuilder: (context, index) {
+                          final player = _practicePlayers[index];
+                          final isSelected = tempSelectedPlayers.contains(
+                            player,
+                          );
+
+                          return ListTile(
+                            leading: Icon(
+                              isSelected
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank,
+                              color: isSelected
+                                  ? Colors.blue[600]
+                                  : Colors.grey[400],
+                            ),
+                            title: Text(
+                              player.fullName,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.w500
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.blue[700]
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                            onTap: () {
+                              setModalState(() {
+                                if (isSelected) {
+                                  tempSelectedPlayers.remove(player);
+                                } else {
+                                  tempSelectedPlayers.add(player);
+                                }
+                              });
+                            },
+                            selected: isSelected,
+                            selectedTileColor: Colors.blue.withOpacity(0.1),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Apply the changes when Done is pressed
+                    setState(() {
+                      _selectedPlayers = tempSelectedPlayers;
+                    });
+                    _updateDisplayedEvents();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Done'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
