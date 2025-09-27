@@ -1199,26 +1199,37 @@ class _MultiEventCourtPainter extends CustomPainter {
         final x = courtOffsetX + (event.fromX! * courtSize);
         final y = courtOffsetY + (event.fromY! * courtHeight);
 
-        // Draw start point
+        // Draw start point as green circle
         canvas.drawCircle(
           Offset(x, y),
           4,
           Paint()
-            ..color = eventColor
+            ..color = Colors.green
             ..style = PaintingStyle.fill,
         );
 
-        // Draw end point if available
+        // Draw end point if available as red X
         if (event.toX != null && event.toY != null) {
           final endX = courtOffsetX + (event.toX! * courtSize);
           final endY = courtOffsetY + (event.toY! * courtHeight);
 
-          canvas.drawCircle(
-            Offset(endX, endY),
-            3,
-            Paint()
-              ..color = eventColor.withOpacity(0.7)
-              ..style = PaintingStyle.fill,
+          // Draw red X
+          final crossSize = 6.0;
+          final redPaint = Paint()
+            ..color = Colors.red
+            ..strokeWidth = 2
+            ..style = PaintingStyle.stroke;
+
+          // Draw the two lines of the X
+          canvas.drawLine(
+            Offset(endX - crossSize, endY - crossSize),
+            Offset(endX + crossSize, endY + crossSize),
+            redPaint,
+          );
+          canvas.drawLine(
+            Offset(endX + crossSize, endY - crossSize),
+            Offset(endX - crossSize, endY + crossSize),
+            redPaint,
           );
 
           // Draw line connecting start and end
