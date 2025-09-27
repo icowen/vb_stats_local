@@ -72,6 +72,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   String? _selectedServeType;
   bool _isLoadingPlayerStats = false;
 
+  // Attack metadata selection (multiple selection)
+  Set<String> _selectedAttackMetadata = {};
+
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
 
@@ -447,6 +450,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
+        _selectedAttackMetadata.clear(); // Clear attack metadata
         // Keep coordinates when unselecting player
         _isLoadingPlayerStats = false;
       });
@@ -459,6 +463,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
         _selectedAttackResult = null; // Clear attack result selection
+        _selectedAttackMetadata.clear(); // Clear attack metadata
         // Keep coordinates when selecting new player
         _isLoadingPlayerStats = true;
       });
@@ -2330,6 +2335,55 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 4),
+                            // Attack Metadata
+                            Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildMetadataButton(
+                                      'Tip',
+                                      'tip',
+                                      const Color(0xFF9C27B0),
+                                    ),
+                                    _buildMetadataButton(
+                                      'Shot',
+                                      'shot',
+                                      const Color(0xFF2196F3),
+                                    ),
+                                    _buildMetadataButton(
+                                      'Blocked',
+                                      'blocked',
+                                      const Color(0xFFFF9800),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildMetadataButton(
+                                      'Recycle',
+                                      'recycle',
+                                      const Color(0xFF4CAF50),
+                                    ),
+                                    _buildMetadataButton(
+                                      'Tool',
+                                      'tool',
+                                      const Color(0xFF607D8B),
+                                    ),
+                                    _buildMetadataButton(
+                                      'Deflected',
+                                      'deflected',
+                                      const Color(0xFFE91E63),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -2405,6 +2459,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     );
   }
 
+  Widget _buildMetadataButton(String label, String value, Color color) {
+    final bool isDisabled = _selectedPlayer == null;
+    final bool isSelected = _selectedAttackMetadata.contains(value);
+    final Color buttonColor = isDisabled ? Colors.grey : color;
+
+    return OutlinedButton(
+      onPressed: isDisabled ? null : () => _toggleAttackMetadata(value),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDisabled ? Colors.grey : buttonColor,
+        backgroundColor: isSelected
+            ? buttonColor.withOpacity(0.3)
+            : Colors.transparent,
+        side: BorderSide(
+          color: isDisabled
+              ? Colors.grey
+              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+          width: isSelected ? 2 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 20),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
+          color: isDisabled ? Colors.grey : buttonColor,
+        ),
+      ),
+    );
+  }
+
   bool _canSaveAction() {
     if (_selectedPlayer == null) {
       return false;
@@ -2465,6 +2552,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Clear other action selections
       _selectedPassRating = null;
       _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedAttackMetadata.clear();
       _selectedServeResult = null;
 
       // Set serve type
@@ -2559,6 +2648,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Clear other action selections
       _selectedPassRating = null;
       _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
 
       // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
@@ -2589,6 +2679,17 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Set attack result
       _selectedAttackResult = result;
       // Don't clear coordinates when changing action
+      // Keep attack metadata when switching results
+    });
+  }
+
+  void _toggleAttackMetadata(String metadata) {
+    setState(() {
+      if (_selectedAttackMetadata.contains(metadata)) {
+        _selectedAttackMetadata.remove(metadata);
+      } else {
+        _selectedAttackMetadata.add(metadata);
+      }
     });
   }
 
@@ -2781,6 +2882,16 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _endY,
     );
 
+    // Create metadata map with result and selected metadata
+    final metadata = <String, dynamic>{
+      'result': _selectedAttackResult ?? 'unknown',
+    };
+
+    // Add selected metadata fields
+    for (final metadataField in _selectedAttackMetadata) {
+      metadata[metadataField] = true;
+    }
+
     final tempEvent = Event(
       id: DateTime.now().millisecondsSinceEpoch,
       practice: widget.practice,
@@ -2788,7 +2899,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       player: _selectedPlayer!,
       team: team,
       type: EventType.attack,
-      metadata: {'result': _selectedAttackResult ?? 'unknown'},
+      metadata: metadata,
       timestamp: DateTime.now(),
       fromX: normalizedCoords['fromX'],
       fromY: normalizedCoords['fromY'],
@@ -2803,6 +2914,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedPlayer = null;
         _selectedActionType = null;
         _selectedAttackResult = null;
+        _selectedAttackMetadata.clear();
         _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
