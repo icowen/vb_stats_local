@@ -202,7 +202,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       );
 
       setState(() {
-        _practicePlayers = practicePlayers;
+        _practicePlayers = _sortPlayers(practicePlayers);
         _teamEvents = teamEvents;
         _displayedEvents =
             []; // Initially show nothing until action types are selected
@@ -214,6 +214,34 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         _isLoading = false;
       });
     }
+  }
+
+  // Sort players by jersey number, then name
+  List<Player> _sortPlayers(List<Player> players) {
+    final sortedPlayers = List<Player>.from(players);
+    sortedPlayers.sort((a, b) {
+      // First sort by jersey number (nulls last)
+      final aJersey = a.jerseyNumber;
+      final bJersey = b.jerseyNumber;
+
+      if (aJersey == null && bJersey == null) {
+        // Both null, sort by name
+      } else if (aJersey == null) {
+        return 1; // a comes after b
+      } else if (bJersey == null) {
+        return -1; // a comes before b
+      } else {
+        final jerseyCompare = aJersey.compareTo(bJersey);
+        if (jerseyCompare != 0) return jerseyCompare;
+      }
+
+      // Then sort by full name
+      final aName = a.fullName;
+      final bName = b.fullName;
+      return aName.compareTo(bName);
+    });
+
+    return sortedPlayers;
   }
 
   // Calculate optimal column widths based on content
