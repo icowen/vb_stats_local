@@ -723,44 +723,50 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         ),
         const SizedBox(height: 16),
 
-        // Filters Row
-        _buildFiltersSection(),
-        const SizedBox(height: 16),
-
-        // Court
-        Container(
-          height: 400,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: _buildMultiEventCourt(),
-          ),
-        ),
-
-        const SizedBox(height: 8),
-        Text(
-          '${_displayedEvents.length} events displayed',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+        // Filters and Court Row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left side - Filters
+            Expanded(
+              flex: 2,
+              child: _buildFiltersSection(),
+            ),
+            const SizedBox(width: 16),
+            // Right side - Court
+            Expanded(
+              flex: 3,
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 360, // Reduced height to match court proportions
+                    child: _buildMultiEventCourt(),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_displayedEvents.length} events displayed',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildFiltersSection() {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left side - Action Type Filters
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        // Action Type and Metadata Filters
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               Text(
                 'Action Type:',
                 style: Theme.of(
@@ -876,16 +882,13 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
               ],
             ],
           ),
-        ),
 
-        const SizedBox(width: 16),
+        const SizedBox(height: 16),
 
-        // Right side - Player Selection
-        Expanded(
-          flex: 1,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        // Player Selection
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               Text(
                 'Players:',
                 style: Theme.of(
@@ -894,8 +897,36 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
               ),
               const SizedBox(height: 8),
 
-              // Selected Players Tiles
+              // Player Selection Button
+              GestureDetector(
+                onTap: () => _showPlayerSelectionModal(),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[400]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Select Players (${_selectedPlayers.length} selected)',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ),
+                      Icon(Icons.person_add, color: Colors.grey[600]),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Selected Players Tiles (below the button)
               if (_selectedPlayers.isNotEmpty) ...[
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
@@ -936,37 +967,8 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 8),
               ],
-
-              // Player Selection Button
-              GestureDetector(
-                onTap: () => _showPlayerSelectionModal(),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[400]!),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Select Players (${_selectedPlayers.length} selected)',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ),
-                      Icon(Icons.person_add, color: Colors.grey[600]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
       ],
     );
@@ -1065,7 +1067,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   Widget _buildMultiEventCourt() {
     return SizedBox(
       width: double.infinity,
-      height: 400,
+      height: 360, // Reduced height to match container
       child: CustomPaint(
         painter: _MultiEventCourtPainter(events: _displayedEvents),
       ),
@@ -1100,10 +1102,14 @@ class _MultiEventCourtPainter extends CustomPainter {
       ..strokeWidth = 4;
 
     // Calculate court position (centered within outer border)
-    final courtOffsetX = (size.width - 480) / 2;
-    final courtOffsetY = (size.height - 240) / 2;
     final courtSize = 480.0;
     final courtHeight = 240.0;
+    final courtOffsetX = (size.width - courtSize) / 2;
+    // Use equal spacing all around the court
+    final spacingX = (size.width - courtSize) / 2;
+    final spacingY = (size.height - courtHeight) / 2;
+    final equalSpacing = spacingX < spacingY ? spacingX : spacingY;
+    final courtOffsetY = equalSpacing;
 
     // Draw outer border background
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), outerPaint);
