@@ -444,13 +444,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   itemBuilder: (context, index) {
                     final practice = _practices[index];
                     return Card(
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.fitness_center,
-                          color: Color(0xFF00FF88),
-                        ),
-                        title: Text(practice.practiceTitle),
-                        subtitle: Text(DateFormatter.formatDate(practice.date)),
+                      child: GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
@@ -459,10 +453,22 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           );
                         },
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: Colors.grey,
+                        onLongPress: () =>
+                            _showPracticeOptions(context, practice),
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.fitness_center,
+                            color: Color(0xFF00FF88),
+                          ),
+                          title: Text(practice.practiceTitle),
+                          subtitle: Text(
+                            DateFormatter.formatDate(practice.date),
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     );
@@ -470,6 +476,302 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
         ),
       ],
+    );
+  }
+
+  void _showPracticeOptions(BuildContext context, Practice practice) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF2D2D2D),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                practice.practiceTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                DateFormatter.formatDate(practice.date),
+                style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _editPractice(context, practice);
+                      },
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      label: const Text(
+                        'Edit',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00E5FF),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _deletePractice(context, practice);
+                      },
+                      icon: const Icon(Icons.delete, color: Colors.white),
+                      label: const Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF4444),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _editPractice(BuildContext context, Practice practice) {
+    DateTime selectedDate = practice.date;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF2D2D2D),
+              title: const Text(
+                'Edit Practice',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.grey[600]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: Color(0xFF00E5FF),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Practice: ${practice.practiceTitle}',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Select new date:',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.dark(
+                                primary: Color(0xFF00E5FF),
+                                onPrimary: Colors.white,
+                                surface: Color(0xFF2D2D2D),
+                                onSurface: Colors.white,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (date != null) {
+                        setState(() {
+                          selectedDate = date;
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Color(0xFF00E5FF),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            DateFormatter.formatDate(selectedDate),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Store reference to the main widget's context
+                    final mainContext = this.context;
+
+                    try {
+                      final updatedPractice = Practice(
+                        id: practice.id,
+                        date: selectedDate,
+                        team: practice.team,
+                      );
+
+                      await _practiceService.updatePractice(updatedPractice);
+                      await _loadData();
+
+                      if (mainContext.mounted) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(mainContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Practice date updated successfully'),
+                            backgroundColor: Color(0xFF00FF88),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mainContext.mounted) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(mainContext).showSnackBar(
+                          SnackBar(
+                            content: Text('Error updating practice: $e'),
+                            backgroundColor: const Color(0xFFFF4444),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(color: Color(0xFF00E5FF)),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _deletePractice(BuildContext context, Practice practice) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          title: const Text(
+            'Delete Practice',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${practice.practiceTitle}"?\n\nThis will also delete all actions recorded during this practice.',
+            style: const TextStyle(color: Colors.white),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Store reference to the main widget's context
+                final mainContext = this.context;
+
+                try {
+                  await _practiceService.deletePractice(practice.id!);
+                  await _loadData();
+
+                  if (mainContext.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(mainContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Practice deleted successfully'),
+                        backgroundColor: Color(0xFF00FF88),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mainContext.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(mainContext).showSnackBar(
+                      SnackBar(
+                        content: Text('Error deleting practice: $e'),
+                        backgroundColor: const Color(0xFFFF4444),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Color(0xFFFF4444)),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
