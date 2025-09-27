@@ -28,11 +28,144 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   List<Event> _teamEvents = [];
   bool _isLoading = true;
 
+  // Filter state
+  EventType? _selectedActionType;
+  Set<String> _selectedMetadata = {}; // Format: "key:value"
+  Set<Player> _selectedPlayers = {};
+  List<Event> _displayedEvents = [];
+  bool _isPlayerDropdownOpen = false;
+
   String _formatHitPercentage(double hitPercentage) {
     if (hitPercentage >= 1.0) {
       return '1.000';
     } else {
       return '.${(hitPercentage * 1000).round().toString().padLeft(3, '0')}';
+    }
+  }
+
+  void _updateDisplayedEvents() {
+    setState(() {
+      if (_selectedActionType == null) {
+        // If no action type selected, show nothing
+        _displayedEvents = [];
+      } else {
+        // Filter events by selected action type, metadata, and players
+        _displayedEvents = _teamEvents.where((event) {
+          // Filter by action type
+          if (event.type != _selectedActionType) {
+            return false;
+          }
+
+          // Filter by metadata (if any metadata selected)
+          if (_selectedMetadata.isNotEmpty) {
+            // All selected metadata must match (AND logic)
+            for (final metadataSelection in _selectedMetadata) {
+              // Parse "key:value" format
+              final parts = metadataSelection.split(':');
+              if (parts.length == 2) {
+                final key = parts[0];
+                final value = parts[1];
+                if (!event.metadata.containsKey(key) ||
+                    event.metadata[key].toString() != value) {
+                  return false; // This metadata doesn't match, exclude event
+                }
+              }
+            }
+          }
+
+          // Filter by player (if any players selected)
+          if (_selectedPlayers.isNotEmpty &&
+              !_selectedPlayers.contains(event.player)) {
+            return false;
+          }
+
+          return true;
+        }).toList();
+      }
+    });
+  }
+
+  void _toggleActionType(EventType actionType) {
+    setState(() {
+      if (_selectedActionType == actionType) {
+        // If the same action type is selected, deselect it
+        _selectedActionType = null;
+      } else {
+        // Select the new action type
+        _selectedActionType = actionType;
+      }
+      _selectedMetadata.clear(); // Clear metadata when changing action types
+    });
+    _updateDisplayedEvents();
+  }
+
+  void _toggleMetadata(String key, String value) {
+    final metadataSelection = '$key:$value';
+    setState(() {
+      if (_selectedMetadata.contains(metadataSelection)) {
+        _selectedMetadata.remove(metadataSelection);
+      } else {
+        _selectedMetadata.add(metadataSelection);
+      }
+    });
+    _updateDisplayedEvents();
+  }
+
+  void _togglePlayer(Player player) {
+    setState(() {
+      if (_selectedPlayers.contains(player)) {
+        _selectedPlayers.remove(player);
+      } else {
+        _selectedPlayers.add(player);
+      }
+    });
+    _updateDisplayedEvents();
+  }
+
+  Map<String, Set<String>> _getAvailableMetadataGroups() {
+    if (_selectedActionType == null) return {};
+
+    final Map<String, Set<String>> metadataGroups = {};
+    for (final event in _teamEvents) {
+      if (event.type == _selectedActionType) {
+        // Group metadata by key, collecting all values for each key
+        for (final entry in event.metadata.entries) {
+          final key = entry.key;
+          final value = entry.value;
+
+          if (value is String || value is bool) {
+            metadataGroups.putIfAbsent(key, () => <String>{});
+            metadataGroups[key]!.add(value.toString());
+          }
+        }
+      }
+    }
+
+    // Sort the values within each group
+    for (final key in metadataGroups.keys) {
+      final sortedValues = metadataGroups[key]!.toList()..sort();
+      metadataGroups[key] = sortedValues.toSet();
+    }
+
+    return metadataGroups;
+  }
+
+  Color _getActionTypeColor(EventType actionType) {
+    switch (actionType) {
+      case EventType.serve:
+        return const Color(0xFF00E5FF); // Light blue
+      case EventType.pass:
+        return const Color(0xFF00FF88); // Light green
+      case EventType.attack:
+        return const Color(0xFFFF8800); // Orange
+      case EventType.block:
+        return const Color(0xFF9C27B0); // Purple
+      case EventType.dig:
+        return const Color(0xFFFF4444); // Red
+      case EventType.set:
+        return const Color(0xFFFFFF00); // Yellow
+      case EventType.freeball:
+        return const Color(0xFF00FF00); // Bright green
     }
   }
 
@@ -55,6 +188,8 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       setState(() {
         _practicePlayers = practicePlayers;
         _teamEvents = teamEvents;
+        _displayedEvents =
+            []; // Initially show nothing until action types are selected
         _isLoading = false;
       });
     } catch (e) {
@@ -298,6 +433,10 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 24),
+
+                  // Court Visualization Section
+                  _buildCourtVisualizationSection(),
                   const SizedBox(height: 24),
 
                   // Player Stats Table
@@ -573,5 +712,522 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
     }
 
     return stats;
+  }
+
+  Widget _buildCourtVisualizationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Court Visualization',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+
+        // Filters Row
+        _buildFiltersSection(),
+        const SizedBox(height: 16),
+
+        // Court
+        Container(
+          height: 400,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: _buildMultiEventCourt(),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+        Text(
+          '${_displayedEvents.length} events displayed',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFiltersSection() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left side - Action Type Filters
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Action Type:',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: EventType.values.map((actionType) {
+                  final isSelected = _selectedActionType == actionType;
+                  final color = _getActionTypeColor(actionType);
+                  return OutlinedButton(
+                    onPressed: () => _toggleActionType(actionType),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isSelected ? color : Colors.grey[600],
+                      backgroundColor: isSelected
+                          ? color.withOpacity(0.2)
+                          : Colors.transparent,
+                      side: BorderSide(
+                        color: isSelected ? color : color.withOpacity(0.5),
+                        width: isSelected ? 2 : 1,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: Text(
+                      actionType.displayName,
+                      style: TextStyle(
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        fontSize: 12,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              // Metadata Filters
+              if (_selectedActionType != null) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: _getAvailableMetadataGroups().entries.map((entry) {
+                    final groupName = entry.key;
+                    final values = entry.value.toList();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          groupName.toUpperCase(),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[600],
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: values.map((value) {
+                            final isSelected = _selectedMetadata.contains(
+                              '$groupName:$value',
+                            );
+                            return OutlinedButton(
+                              onPressed: () =>
+                                  _toggleMetadata(groupName, value),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: isSelected
+                                    ? const Color(0xFF00FF88)
+                                    : Colors.grey[600],
+                                backgroundColor: isSelected
+                                    ? const Color(0xFF00FF88).withOpacity(0.2)
+                                    : Colors.transparent,
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? const Color(0xFF00FF88)
+                                      : const Color(
+                                          0xFF00FF88,
+                                        ).withOpacity(0.5),
+                                  width: isSelected ? 2 : 1,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 6,
+                                ),
+                                minimumSize: const Size(0, 28),
+                              ),
+                              child: Text(
+                                value,
+                                style: TextStyle(
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        const SizedBox(width: 16),
+
+        // Right side - Player Selection
+        Expanded(
+          flex: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Players:',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+
+              // Selected Players Tiles
+              if (_selectedPlayers.isNotEmpty) ...[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _selectedPlayers.map((player) {
+                    return GestureDetector(
+                      onTap: () => _togglePlayer(player),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              player.fullName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.blue[700],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // Player Selection Multi-Dropdown
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isPlayerDropdownOpen = !_isPlayerDropdownOpen;
+                  });
+                },
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[400]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Add players (all if none selected)',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ),
+                            Icon(
+                              _isPlayerDropdownOpen
+                                  ? Icons.arrow_drop_up
+                                  : Icons.arrow_drop_down,
+                              color: Colors.grey[600],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_isPlayerDropdownOpen) ...[
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(color: Colors.grey[300]!),
+                            ),
+                          ),
+                          child: Column(
+                            children: _practicePlayers.map((player) {
+                              final isSelected = _selectedPlayers.contains(
+                                player,
+                              );
+                              return InkWell(
+                                onTap: () => _togglePlayer(player),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSelected
+                                            ? Icons.check_box
+                                            : Icons.check_box_outline_blank,
+                                        color: isSelected
+                                            ? Colors.blue[600]
+                                            : Colors.grey[400],
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          player.fullName,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? Colors.blue[700]
+                                                : Colors.grey[700],
+                                            fontSize: 14,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w500
+                                                : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultiEventCourt() {
+    return SizedBox(
+      width: double.infinity,
+      height: 400,
+      child: CustomPaint(
+        painter: _MultiEventCourtPainter(events: _displayedEvents),
+      ),
+    );
+  }
+}
+
+class _MultiEventCourtPainter extends CustomPainter {
+  final List<Event> events;
+
+  _MultiEventCourtPainter({required this.events});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outerPaint = Paint()
+      ..color = const Color(0xFF2D2D2D)
+      ..style = PaintingStyle.fill;
+
+    final outerLinePaint = Paint()
+      ..color = const Color(0xFF00E5FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    final courtLinePaint = Paint()
+      ..color = const Color(0xFF00E5FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final netPaint = Paint()
+      ..color = const Color(0xFF9C27B0)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+
+    // Calculate court position (centered within outer border)
+    final courtOffsetX = (size.width - 480) / 2;
+    final courtOffsetY = (size.height - 240) / 2;
+    final courtSize = 480.0;
+    final courtHeight = 240.0;
+
+    // Draw outer border background
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), outerPaint);
+
+    // Draw outer border lines
+    canvas.drawLine(Offset(0, 0), Offset(size.width, 0), outerLinePaint);
+    canvas.drawLine(
+      Offset(0, size.height),
+      Offset(size.width, size.height),
+      outerLinePaint,
+    );
+    canvas.drawLine(Offset(0, 0), Offset(0, size.height), outerLinePaint);
+    canvas.drawLine(
+      Offset(size.width, 0),
+      Offset(size.width, size.height),
+      outerLinePaint,
+    );
+
+    // Draw court background
+    canvas.drawRect(
+      Rect.fromLTWH(courtOffsetX, courtOffsetY, courtSize, courtHeight),
+      Paint()
+        ..color = const Color(0xFF1A1A1A)
+        ..style = PaintingStyle.fill,
+    );
+
+    // Draw court sidelines
+    canvas.drawLine(
+      Offset(courtOffsetX, courtOffsetY),
+      Offset(courtOffsetX + courtSize, courtOffsetY),
+      courtLinePaint,
+    );
+    canvas.drawLine(
+      Offset(courtOffsetX, courtOffsetY + courtHeight),
+      Offset(courtOffsetX + courtSize, courtOffsetY + courtHeight),
+      courtLinePaint,
+    );
+
+    // Draw court endlines
+    canvas.drawLine(
+      Offset(courtOffsetX, courtOffsetY),
+      Offset(courtOffsetX, courtOffsetY + courtHeight),
+      courtLinePaint,
+    );
+    canvas.drawLine(
+      Offset(courtOffsetX + courtSize, courtOffsetY),
+      Offset(courtOffsetX + courtSize, courtOffsetY + courtHeight),
+      courtLinePaint,
+    );
+
+    // Draw net line
+    final courtCenterX = courtOffsetX + courtSize / 2;
+    canvas.drawLine(
+      Offset(courtCenterX, courtOffsetY),
+      Offset(courtCenterX, courtOffsetY + courtHeight),
+      netPaint,
+    );
+
+    // Draw 10-foot attack lines
+    final attackLinePaint = Paint()
+      ..color = const Color(0xFF666666)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    final leftAttackLineX = courtCenterX - 80; // 80 pixels = 10 feet
+    final rightAttackLineX = courtCenterX + 80;
+
+    canvas.drawLine(
+      Offset(leftAttackLineX, courtOffsetY - 5),
+      Offset(leftAttackLineX, courtOffsetY + courtHeight + 5),
+      attackLinePaint,
+    );
+    canvas.drawLine(
+      Offset(rightAttackLineX, courtOffsetY - 5),
+      Offset(rightAttackLineX, courtOffsetY + courtHeight + 5),
+      attackLinePaint,
+    );
+
+    // Draw events
+    for (final event in events) {
+      if (event.fromX != null && event.fromY != null) {
+        final eventColor = _getEventColor(event);
+        final x = courtOffsetX + (event.fromX! * courtSize);
+        final y = courtOffsetY + (event.fromY! * courtHeight);
+
+        // Draw start point
+        canvas.drawCircle(
+          Offset(x, y),
+          4,
+          Paint()
+            ..color = eventColor
+            ..style = PaintingStyle.fill,
+        );
+
+        // Draw end point if available
+        if (event.toX != null && event.toY != null) {
+          final endX = courtOffsetX + (event.toX! * courtSize);
+          final endY = courtOffsetY + (event.toY! * courtHeight);
+
+          canvas.drawCircle(
+            Offset(endX, endY),
+            3,
+            Paint()
+              ..color = eventColor.withOpacity(0.7)
+              ..style = PaintingStyle.fill,
+          );
+
+          // Draw line connecting start and end
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(endX, endY),
+            Paint()
+              ..color = eventColor.withOpacity(0.5)
+              ..strokeWidth = 2,
+          );
+        }
+      }
+    }
+  }
+
+  Color _getEventColor(Event event) {
+    switch (event.type) {
+      case EventType.serve:
+        return const Color(0xFF00E5FF); // Light blue
+      case EventType.pass:
+        return const Color(0xFF00FF88); // Light green
+      case EventType.attack:
+        return const Color(0xFFFF8800); // Orange
+      case EventType.block:
+        return const Color(0xFF9C27B0); // Purple
+      case EventType.dig:
+        return const Color(0xFFFF4444); // Red
+      case EventType.set:
+        return const Color(0xFFFFFF00); // Yellow
+      case EventType.freeball:
+        return const Color(0xFF00FF00); // Bright green
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return oldDelegate is _MultiEventCourtPainter &&
+        oldDelegate.events != events;
   }
 }
