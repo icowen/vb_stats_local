@@ -75,6 +75,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   // Attack metadata selection (multiple selection)
   Set<String> _selectedAttackMetadata = {};
 
+  // Pass type selection (single selection)
+  String? _selectedPassType;
+
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
 
@@ -449,6 +452,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedActionType = null; // Clear action type selection
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
+        _selectedPassType = null; // Clear pass type selection
         _selectedAttackResult = null; // Clear attack result selection
         _selectedAttackMetadata.clear(); // Clear attack metadata
         // Keep coordinates when unselecting player
@@ -462,6 +466,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedActionType = null; // Clear action type selection
         _selectedServeResult = null; // Clear serve result selection
         _selectedPassRating = null; // Clear pass rating selection
+        _selectedPassType = null; // Clear pass type selection
         _selectedAttackResult = null; // Clear attack result selection
         _selectedAttackMetadata.clear(); // Clear attack metadata
         // Keep coordinates when selecting new player
@@ -2265,6 +2270,23 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 4),
+                            // Pass Type
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildPassTypeButton(
+                                  'Overhand',
+                                  'overhand',
+                                  const Color(0xFF00FF88),
+                                ),
+                                _buildPassTypeButton(
+                                  'Platform',
+                                  'platform',
+                                  const Color(0xFF00FF88),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -2492,6 +2514,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     );
   }
 
+  Widget _buildPassTypeButton(String label, String value, Color color) {
+    final bool isDisabled = _selectedPlayer == null;
+    final bool isSelected = _selectedPassType == value;
+    final Color buttonColor = isDisabled ? Colors.grey : color;
+
+    return OutlinedButton(
+      onPressed: isDisabled ? null : () => _selectPassType(value),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isDisabled ? Colors.grey : buttonColor,
+        backgroundColor: isSelected
+            ? buttonColor.withOpacity(0.3)
+            : Colors.transparent,
+        side: BorderSide(
+          color: isDisabled
+              ? Colors.grey
+              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+          width: isSelected ? 2 : 1,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 20),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 12,
+          color: isDisabled ? Colors.grey : buttonColor,
+        ),
+      ),
+    );
+  }
+
   bool _canSaveAction() {
     if (_selectedPlayer == null) {
       return false;
@@ -2551,6 +2606,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     setState(() {
       // Clear other action selections
       _selectedPassRating = null;
+      _selectedPassType = null;
       _selectedAttackResult = null;
       _selectedAttackMetadata.clear();
       _selectedAttackMetadata.clear();
@@ -2647,6 +2703,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     setState(() {
       // Clear other action selections
       _selectedPassRating = null;
+      _selectedPassType = null;
       _selectedAttackResult = null;
       _selectedAttackMetadata.clear();
 
@@ -2689,6 +2746,18 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedAttackMetadata.remove(metadata);
       } else {
         _selectedAttackMetadata.add(metadata);
+      }
+    });
+  }
+
+  void _selectPassType(String passType) {
+    setState(() {
+      if (_selectedPassType == passType) {
+        // If the same type is selected, deselect it
+        _selectedPassType = null;
+      } else {
+        // Select the new type
+        _selectedPassType = passType;
       }
     });
   }
@@ -2810,6 +2879,16 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _endY,
     );
 
+    // Create metadata map with rating and pass type
+    final metadata = <String, dynamic>{
+      'rating': _selectedPassRating ?? 'unknown',
+    };
+
+    // Add pass type if selected
+    if (_selectedPassType != null) {
+      metadata['pass_type'] = _selectedPassType;
+    }
+
     final tempEvent = Event(
       id: DateTime.now().millisecondsSinceEpoch,
       practice: widget.practice,
@@ -2817,7 +2896,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       player: _selectedPlayer!,
       team: team,
       type: EventType.pass,
-      metadata: {'rating': _selectedPassRating ?? 'unknown'},
+      metadata: metadata,
       timestamp: DateTime.now(),
       fromX: normalizedCoords['fromX'],
       fromY: normalizedCoords['fromY'],
@@ -2832,6 +2911,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedPlayer = null;
         _selectedActionType = null;
         _selectedPassRating = null;
+        _selectedPassType = null;
         _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
