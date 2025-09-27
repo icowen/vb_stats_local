@@ -943,10 +943,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   Widget _buildEventItem(Event event) {
-    final time = event.timestamp;
-    final timeString =
-        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-
     String eventDescription = '';
     Color eventColor = Colors.grey;
     IconData eventIcon = Icons.circle;
@@ -1007,9 +1003,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             eventDescription,
             style: TextStyle(fontSize: 12, color: eventColor),
           ),
-          trailing: Text(
-            timeString,
-            style: const TextStyle(fontSize: 10, color: Colors.grey),
+          trailing: _buildMiniCourt(
+            event.fromX,
+            event.fromY,
+            event.toX,
+            event.toY,
           ),
         ),
       ),
@@ -2685,6 +2683,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     );
   }
 
+  Widget _buildMiniCourt(
+    double? fromX,
+    double? fromY,
+    double? toX,
+    double? toY,
+  ) {
+    // If no coordinates, show a simple placeholder
+    if (fromX == null && fromY == null && toX == null && toY == null) {
+      return SizedBox(
+        width: 60,
+        height: 40,
+        child: Container(
+          child: const Center(
+            child: Icon(Icons.location_off, size: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: 60,
+      height: 40,
+      child: CustomPaint(
+        painter: _MiniCourtPainter(
+          fromX: fromX,
+          fromY: fromY,
+          toX: toX,
+          toY: toY,
+        ),
+      ),
+    );
+  }
+
   bool _canSaveAction() {
     if (_selectedPlayer == null) {
       return false;
@@ -3293,5 +3324,97 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     }
+  }
+}
+
+class _MiniCourtPainter extends CustomPainter {
+  final double? fromX;
+  final double? fromY;
+  final double? toX;
+  final double? toY;
+
+  _MiniCourtPainter({this.fromX, this.fromY, this.toX, this.toY});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey[600]!
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    // Court dimensions (mini version)
+    final courtWidth = size.width;
+    final courtHeight = size.height;
+
+    // Draw court outline (end and side lines)
+    canvas.drawRect(Rect.fromLTWH(0, 0, courtWidth, courtHeight), paint);
+
+    // Draw net line (middle vertical)
+    canvas.drawLine(
+      Offset(courtWidth / 2, 0),
+      Offset(courtWidth / 2, courtHeight),
+      paint,
+    );
+
+    // Draw 10-foot lines (attack lines)
+    // 10-foot lines are closer to the net (center) than the end lines
+    final tenFootDistance =
+        courtWidth * 0.15; // 15% from center (closer to net)
+
+    // Left side 10-foot line (closer to net)
+    canvas.drawLine(
+      Offset(courtWidth / 2 - tenFootDistance, 0),
+      Offset(courtWidth / 2 - tenFootDistance, courtHeight),
+      paint,
+    );
+
+    // Right side 10-foot line (closer to net)
+    canvas.drawLine(
+      Offset(courtWidth / 2 + tenFootDistance, 0),
+      Offset(courtWidth / 2 + tenFootDistance, courtHeight),
+      paint,
+    );
+
+    // Draw coordinate points if available
+    if (fromX != null && fromY != null) {
+      final pointPaint = Paint()
+        ..color = Colors.green
+        ..style = PaintingStyle.fill;
+
+      // Convert normalized coordinates (0-1) to mini court position
+      final x = fromX! * courtWidth;
+      final y = fromY! * courtHeight;
+
+      canvas.drawCircle(
+        Offset(x.clamp(2, courtWidth - 2), y.clamp(2, courtHeight - 2)),
+        2,
+        pointPaint,
+      );
+    }
+
+    if (toX != null && toY != null) {
+      final pointPaint = Paint()
+        ..color = Colors.red
+        ..style = PaintingStyle.fill;
+
+      // Convert normalized coordinates (0-1) to mini court position
+      final x = toX! * courtWidth;
+      final y = toY! * courtHeight;
+
+      canvas.drawCircle(
+        Offset(x.clamp(2, courtWidth - 2), y.clamp(2, courtHeight - 2)),
+        2,
+        pointPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return oldDelegate is _MiniCourtPainter &&
+        (oldDelegate.fromX != fromX ||
+            oldDelegate.fromY != fromY ||
+            oldDelegate.toX != toX ||
+            oldDelegate.toY != toY);
   }
 }
