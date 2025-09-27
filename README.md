@@ -1,16 +1,12 @@
 # vb_stats_local
 
-A new Flutter project.
+Flutter project for collecting and analyzing volleyball stats.
 
 ## Getting Started
+You need to [install flutter](https://docs.flutter.dev/get-started?_gl=1%2Awb68i0%2A_gcl_aw%2AR0NMLjE3NTkwMTI4NjAuQ2p3S0NBandsdDdHQmhBdkVpd0FLYWwwY2pYTG52TXpWRkt5enRNVUctUG9nOHdySWFwWUNMaTUyQXBGazJxMkY4UTlhenBIU3BWOW9Sb0MwZFlRQXZEX0J3RQ..%2A_gcl_dc%2AR0NMLjE3NTkwMTI4NjAuQ2p3S0NBandsdDdHQmhBdkVpd0FLYWwwY2pYTG52TXpWRkt5enRNVUctUG9nOHdySWFwWUNMaTUyQXBGazJxMkY4UTlhenBIU3BWOW9Sb0MwZFlRQXZEX0J3RQ..%2A_up%2AMQ..%2A_gs%2AMQ..%2A_ga%2AMTQ2NDg0MDkyLjE3NTg0MjExNjc.%2A_ga_04YGWK0175%2AczE3NTkwMTI4NjAkbzIkZzAkdDE3NTkwMTI4NjAkajYwJGwwJGgw&gclid=CjwKCAjwlt7GBhAvEiwAKal0cjXLnvMzVFKyztMUG-Pog8wrIapYCLi52ApFk2q2F8Q9azpHSpV9oRoC0dYQAvD_BwE&gclsrc=aw.ds&gbraid=0AAAAAC-INI-ZhTVbKG4_C0CNL2UL8LgJl) and have a connected device.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Features
+* Stores everything locally so no need to connect to spotty internet in convention centers
+* Customize metadata for each stat
+* Track progress (WIP)
+* Easily scout teams to see tendencies
