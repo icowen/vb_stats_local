@@ -6,6 +6,7 @@ import '../models/practice.dart';
 import '../models/player.dart';
 import '../models/event.dart';
 import '../utils/date_utils.dart';
+import 's3_service.dart';
 
 class PdfService {
   static Future<String> generatePracticeAnalysisPDF({
@@ -220,6 +221,30 @@ class PdfService {
     print('File Exists: ${await file.exists()}');
     print('File Size: ${await file.length()} bytes');
     print('================================');
+
+    // Upload to S3
+    print('=== ABOUT TO UPLOAD TO S3 ===');
+    try {
+      final generationTime = DateTime.now();
+      print(
+        'Calling S3Service.uploadPDF with practice: ${practice.practiceTitle}',
+      );
+      final s3Url = await S3Service.uploadPDF(
+        pdfFile: file,
+        practiceName: practice.practiceTitle,
+        generationTime: generationTime,
+      );
+
+      print('=== PDF UPLOADED TO S3 ===');
+      print('S3 URL: $s3Url');
+      print('=========================');
+    } catch (e) {
+      print('=== S3 UPLOAD FAILED ===');
+      print('Error: $e');
+      print('Continuing with local file save...');
+      print('=========================');
+      // Don't throw error - continue with local file
+    }
 
     return filePath;
   }
