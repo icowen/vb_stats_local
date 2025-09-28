@@ -176,212 +176,223 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
             )
-          : Row(
-              children: [
-                // Left Sidebar - Players List (25%)
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      border: Border(
-                        right: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Add Player and Team Buttons
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _addPlayerToPractice,
-                                  icon: const Icon(Icons.person_add, size: 16),
-                                  label: const Text(
-                                    'Add Player',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00E5FF),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 6,
-                                      horizontal: 8,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _addTeamToPractice,
-                                  icon: const Icon(Icons.group_add, size: 16),
-                                  label: const Text(
-                                    'Add Team',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF00FF88),
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 6,
-                                      horizontal: 8,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+          : SafeArea(
+              child: Row(
+                children: [
+                  // Left Sidebar - Players List (25%)
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        border: Border(
+                          right: BorderSide(
+                            color: Colors.grey.withOpacity(0.3),
+                            width: 1,
                           ),
                         ),
-                        // Players List
-                        Expanded(
-                          child: _teamPlayers.isEmpty
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Text(
-                                      'No players yet.\nTap "Add Player" to start.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
+                      ),
+                      child: Column(
+                        children: [
+                          // Add Player and Team Buttons
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _addPlayerToPractice,
+                                    icon: const Icon(
+                                      Icons.person_add,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      'Add Player',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF00E5FF),
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                        horizontal: 8,
                                       ),
                                     ),
                                   ),
-                                )
-                              : ListView.builder(
-                                  padding: const EdgeInsets.all(8),
-                                  itemCount: _teamPlayers.length,
-                                  itemBuilder: (context, index) {
-                                    final player = _teamPlayers[index];
-                                    final isSelected =
-                                        _selectedPlayer?.id == player.id;
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 2),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(
-                                                0xFF00E5FF,
-                                              ).withOpacity(0.1)
-                                            : null,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? const Color(0xFF00E5FF)
-                                              : Colors.grey[300]!,
-                                          width: 1,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _addTeamToPractice,
+                                    icon: const Icon(Icons.group_add, size: 16),
+                                    label: const Text(
+                                      'Add Team',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF00FF88),
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                        horizontal: 8,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Players List
+                          Expanded(
+                            child: _teamPlayers.isEmpty
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'No players yet.\nTap "Add Player" to start.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
                                         ),
                                       ),
-                                      child: InkWell(
-                                        onTap: () => _selectPlayer(player),
-                                        onLongPress: () =>
-                                            _showRemovePlayerModal(player),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          width: double.infinity,
-                                          height:
-                                              36, // Fixed height for short tiles
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 2,
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.all(8),
+                                    itemCount: _teamPlayers.length,
+                                    itemBuilder: (context, index) {
+                                      final player = _teamPlayers[index];
+                                      final isSelected =
+                                          _selectedPlayer?.id == player.id;
+                                      return Container(
+                                        margin: const EdgeInsets.only(
+                                          bottom: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? const Color(
+                                                  0xFF00E5FF,
+                                                ).withOpacity(0.1)
+                                              : null,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
                                           ),
-                                          child: Row(
-                                            children: [
-                                              // Jersey number (if available)
-                                              if (player.jerseyNumber !=
-                                                  null) ...[
-                                                Container(
-                                                  width: 24,
-                                                  height: 24,
-                                                  decoration: BoxDecoration(
-                                                    color: isSelected
-                                                        ? const Color(
-                                                            0xFF00E5FF,
-                                                          )
-                                                        : Colors.grey[600],
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? const Color(0xFF00E5FF)
+                                                : Colors.grey[300]!,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: InkWell(
+                                          onTap: () => _selectPlayer(player),
+                                          onLongPress: () =>
+                                              _showRemovePlayerModal(player),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Container(
+                                            width: double.infinity,
+                                            height:
+                                                36, // Fixed height for short tiles
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 2,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                // Jersey number (if available)
+                                                if (player.jerseyNumber !=
+                                                    null) ...[
+                                                  Container(
+                                                    width: 24,
+                                                    height: 24,
+                                                    decoration: BoxDecoration(
+                                                      color: isSelected
+                                                          ? const Color(
+                                                              0xFF00E5FF,
+                                                            )
+                                                          : Colors.grey[600],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        '${player.jerseyNumber}',
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      '${player.jerseyNumber}',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                              ],
-                                              // Player name
-                                              Expanded(
-                                                child: Text(
-                                                  player.fullName,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                    color: isSelected
-                                                        ? const Color(
-                                                            0xFF00E5FF,
-                                                          )
-                                                        : null,
+                                                  const SizedBox(width: 8),
+                                                ],
+                                                // Player name
+                                                Expanded(
+                                                  child: Text(
+                                                    player.fullName,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                      color: isSelected
+                                                          ? const Color(
+                                                              0xFF00E5FF,
+                                                            )
+                                                          : null,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
                                                 ),
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Middle - Stats Collection (50%)
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      border: Border(
-                        right: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
-                          width: 1,
-                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: _buildPlayerStatsArea(),
+                  ),
+                  // Middle - Stats Collection (50%)
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        border: Border(
+                          right: BorderSide(
+                            color: Colors.grey.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: _buildPlayerStatsArea(),
+                      ),
                     ),
                   ),
-                ),
-                // Right Side - Events History (25%)
-                Expanded(
-                  flex: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: _buildEventsHistory(),
+                  // Right Side - Events History (25%)
+                  Expanded(
+                    flex: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: _buildEventsHistory(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
     );
   }
@@ -842,40 +853,35 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   Widget _buildPlayerStatsArea() {
-    return SizedBox(
-      height: double.infinity,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // All Actions Collection
-            _buildAllActionsTile(),
-            const SizedBox(height: 8),
-            VolleyballCourt(
-              onCourtTap: _onCourtTap,
-              onClear: _clearCoordinates,
-              startX: _displayStartX,
-              startY: _displayStartY,
-              endX: _displayEndX,
-              endY: _displayEndY,
-              hasStartPoint: _hasStartPoint,
-              selectedAction: _recordingAction,
-              isRecording: true, // Always allow coordinate recording
-            ),
-            const SizedBox(height: 16),
-            // Team Stats Table
-            Text(
-              'Team Statistics',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _buildTeamStatsTable(),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // All Actions Collection
+        _buildAllActionsTile(),
+        const SizedBox(height: 8),
+        VolleyballCourt(
+          onCourtTap: _onCourtTap,
+          onClear: _clearCoordinates,
+          startX: _displayStartX,
+          startY: _displayStartY,
+          endX: _displayEndX,
+          endY: _displayEndY,
+          hasStartPoint: _hasStartPoint,
+          selectedAction: _recordingAction,
+          isRecording: true, // Always allow coordinate recording
         ),
-      ),
+        const SizedBox(height: 16),
+        // Team Stats Table
+        Text(
+          'Team Statistics',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        _buildTeamStatsTable(),
+      ],
     );
   }
 

@@ -26,7 +26,6 @@ class PlayerStatsTable extends StatefulWidget {
 
 class _PlayerStatsTableState extends State<PlayerStatsTable> {
   late ScrollController _statsScrollController;
-  late ScrollController _stickyScrollController;
 
   String _formatHitPercentage(double hitPercentage) {
     if (hitPercentage >= 1.0) {
@@ -40,24 +39,12 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
   void initState() {
     super.initState();
     _statsScrollController = ScrollController();
-    _stickyScrollController = ScrollController();
-
-    // Listen to stats scroll changes and sync sticky column
-    _statsScrollController.addListener(_syncScrollPositions);
   }
 
   @override
   void dispose() {
-    _statsScrollController.removeListener(_syncScrollPositions);
     _statsScrollController.dispose();
-    _stickyScrollController.dispose();
     super.dispose();
-  }
-
-  void _syncScrollPositions() {
-    if (_stickyScrollController.hasClients) {
-      _stickyScrollController.jumpTo(_statsScrollController.offset);
-    }
   }
 
   @override
@@ -77,6 +64,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              controller: _statsScrollController,
               child: _buildScrollableStatsColumns(),
             ),
           ),
@@ -131,37 +119,32 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             ],
           ),
         ),
-        // Player Data - Use sticky scroll controller (synced with stats)
-        Expanded(
-          child: SingleChildScrollView(
-            controller: _stickyScrollController,
-            child: Column(
-              children: widget.teamPlayers.map((player) {
-                return Container(
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey, width: 1),
-                    ),
+        // Player Data - No scrolling needed, show all players
+        Column(
+          children: widget.teamPlayers.map((player) {
+            return Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _buildDataCell(
+                    player.fullName,
+                    widget.columnWidths['Player']!,
+                    const Color(0xFF00E5FF),
                   ),
-                  child: Row(
-                    children: [
-                      _buildDataCell(
-                        player.fullName,
-                        widget.columnWidths['Player']!,
-                        const Color(0xFF00E5FF),
-                      ),
-                      _buildDataCell(
-                        player.jerseyNumber?.toString() ?? '-',
-                        widget.columnWidths['Jersey']!,
-                        const Color(0xFF00E5FF),
-                        isLast: true,
-                      ),
-                    ],
+                  _buildDataCell(
+                    player.jerseyNumber?.toString() ?? '-',
+                    widget.columnWidths['Jersey']!,
+                    const Color(0xFF00E5FF),
+                    isLast: true,
                   ),
-                );
-              }).toList(),
-            ),
-          ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -173,12 +156,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
         // Headers Row
         _buildHeadersRow(),
         // Data Rows - Use stats scroll controller (master)
-        Expanded(
-          child: SingleChildScrollView(
-            controller: _statsScrollController,
-            child: _buildDataRows(),
-          ),
-        ),
+        _buildDataRows(),
       ],
     );
   }
