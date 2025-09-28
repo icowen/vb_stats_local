@@ -214,11 +214,36 @@ class S3Service {
         throw Exception('S3 client is null during upload');
       }
 
-      await _s3Client!.putObject(
-        bucket: _bucketName,
-        key: s3Key,
-        body: fileBytes,
-      );
+      try {
+        await _s3Client!.putObject(
+          bucket: _bucketName,
+          key: s3Key,
+          body: fileBytes,
+          // Note: ACL removed - bucket should be configured for public access
+        );
+      } catch (e) {
+        // If client is closed, recreate it and try again
+        if (e.toString().contains('Client is already closed')) {
+          print('⚠️  S3 client was closed, recreating...');
+          _s3Client = null;
+          _initializeS3Client();
+
+          if (_s3Client == null) {
+            throw Exception('Failed to recreate S3 client');
+          }
+
+          // Retry the upload with the new client
+          await _s3Client!.putObject(
+            bucket: _bucketName,
+            key: s3Key,
+            body: fileBytes,
+            // Note: ACL removed - bucket should be configured for public access
+          );
+          print('✅ Upload successful after client recreation');
+        } else {
+          rethrow; // Re-throw if it's a different error
+        }
+      }
 
       print('Upload completed successfully!');
 
@@ -234,11 +259,7 @@ class S3Service {
       print('File Size: ${fileBytes.length} bytes');
       print('========================');
 
-      // Close the S3 client
-      if (_s3Client != null) {
-        _s3Client!.close();
-      }
-
+      // Don't close the client - keep it for reuse
       return s3Url;
     } catch (e) {
       print('=== S3 UPLOAD ERROR ===');
@@ -278,7 +299,6 @@ class S3Service {
       }
 
       await _s3Client!.headBucket(bucket: _bucketName);
-      _s3Client!.close();
 
       print('S3 connection test successful!');
       print('==============================');

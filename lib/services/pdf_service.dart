@@ -7,6 +7,7 @@ import '../models/player.dart';
 import '../models/event.dart';
 import '../utils/date_utils.dart';
 import 's3_service.dart';
+import 'email_service.dart';
 
 class PdfService {
   static Future<String> generatePracticeAnalysisPDF({
@@ -238,6 +239,29 @@ class PdfService {
       print('=== PDF UPLOADED TO S3 ===');
       print('S3 URL: $s3Url');
       print('=========================');
+
+      // Send email with PDF attachment
+      try {
+        print('=== SENDING EMAIL ===');
+        final emailSent = await EmailService.sendPDF(
+          pdfFile: file,
+          practiceName: practice.practiceTitle,
+          practiceDate: practice.date,
+        );
+
+        if (emailSent) {
+          print('✅ Email sent successfully');
+        } else {
+          print('❌ Email failed to send');
+        }
+        print('=====================');
+      } catch (e) {
+        print('=== EMAIL SEND FAILED ===');
+        print('Error: $e');
+        print('Continuing without email...');
+        print('=========================');
+        // Don't throw error - continue without email
+      }
     } catch (e) {
       print('=== S3 UPLOAD FAILED ===');
       print('Error: $e');

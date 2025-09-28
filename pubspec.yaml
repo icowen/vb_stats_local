@@ -41,6 +41,7 @@ dependencies:
   path_provider: ^2.1.1
   printing: ^5.11.1
   aws_client: ^0.7.1
+  mailer: ^6.1.4
 
 dev_dependencies:
   flutter_test:
