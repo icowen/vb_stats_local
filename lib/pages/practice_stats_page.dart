@@ -842,35 +842,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   Widget _buildPlayerStatsArea() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // All Actions Collection
-          _buildAllActionsTile(),
-          const SizedBox(height: 8),
-          VolleyballCourt(
-            onCourtTap: _onCourtTap,
-            onClear: _clearCoordinates,
-            startX: _displayStartX,
-            startY: _displayStartY,
-            endX: _displayEndX,
-            endY: _displayEndY,
-            hasStartPoint: _hasStartPoint,
-            selectedAction: _recordingAction,
-            isRecording: true, // Always allow coordinate recording
-          ),
-          const SizedBox(height: 16),
-          // Team Stats Table
-          Text(
-            'Team Statistics',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          _buildTeamStatsTable(),
-        ],
+    return SizedBox(
+      height: double.infinity,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // All Actions Collection
+            _buildAllActionsTile(),
+            const SizedBox(height: 8),
+            VolleyballCourt(
+              onCourtTap: _onCourtTap,
+              onClear: _clearCoordinates,
+              startX: _displayStartX,
+              startY: _displayStartY,
+              endX: _displayEndX,
+              endY: _displayEndY,
+              hasStartPoint: _hasStartPoint,
+              selectedAction: _recordingAction,
+              isRecording: true, // Always allow coordinate recording
+            ),
+            const SizedBox(height: 16),
+            // Team Stats Table
+            Text(
+              'Team Statistics',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            _buildTeamStatsTable(),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../models/event.dart';
 import '../database_helper.dart';
 import '../services/player_service.dart';
 import '../services/event_service.dart';
+import '../services/pdf_service.dart';
 import '../viz/passing_histogram.dart';
 import '../viz/serving_pie_chart.dart';
 import '../viz/attacking_bar_chart.dart';
@@ -424,6 +425,13 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         title: Text('${widget.practice.practiceTitle} - Team Stats'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _generatePDF,
+            tooltip: 'Generate PDF Report',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(
@@ -1110,6 +1118,102 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         painter: _MultiEventCourtPainter(events: _displayedEvents),
       ),
     );
+  }
+
+  Future<void> _generatePDF() async {
+    // Store context reference before async operations
+    final currentContext = context;
+
+    try {
+      // Show loading dialog
+      showDialog(
+        context: currentContext,
+        barrierDismissible: false,
+        builder: (BuildContext dialogContext) {
+          return const AlertDialog(
+            backgroundColor: Color(0xFF2D2D2D),
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                SizedBox(width: 20),
+                Text(
+                  'Generating PDF...',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      // Generate PDF in a separate isolate to avoid UI interference
+      final filePath = await Future.microtask(() async {
+        return await PdfService.generatePracticeAnalysisPDF(
+          practice: widget.practice,
+          practicePlayers: _practicePlayers,
+          teamEvents: _teamEvents,
+          getPlayerServingStats: (player) => _getPlayerServingStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+          getPlayerPassingStats: (player) => _getPlayerPassingStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+          getPlayerAttackingStats: (player) => _getPlayerAttackingStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+        );
+      });
+
+      // Close loading dialog
+      if (mounted && currentContext.mounted) {
+        Navigator.of(currentContext).pop();
+
+        // Show success message with detailed location info
+        final fileName = filePath.split('/').last;
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('PDF generated successfully!'),
+                const SizedBox(height: 4),
+                Text('File: $fileName'),
+                const SizedBox(height: 4),
+                Text(
+                  'Location: Downloads folder',
+                  style: TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text('Full path: $filePath', style: TextStyle(fontSize: 10)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF00FF88),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted && currentContext.mounted) {
+        Navigator.of(currentContext).pop();
+
+        // Show error message
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          SnackBar(
+            content: Text('Error generating PDF: $e'),
+            backgroundColor: const Color(0xFFFF4444),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
 
