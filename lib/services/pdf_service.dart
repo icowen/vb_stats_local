@@ -87,71 +87,108 @@ class PdfService {
       ),
     );
 
-    // Add Court Visualizations for each player/action combination
-    final actionTypes = EventType.values;
-    for (final actionType in actionTypes) {
-      final eventsForAction = teamEvents
-          .where((e) => e.type == actionType)
+    // Add individual pages for each player with all their actions
+    for (final player in practicePlayers) {
+      final playerEvents = teamEvents
+          .where((e) => e.player.id == player.id)
           .toList();
-      if (eventsForAction.isNotEmpty) {
-        // Group by player
-        final eventsByPlayer = <Player, List<Event>>{};
-        for (final event in eventsForAction) {
-          eventsByPlayer.putIfAbsent(event.player, () => []).add(event);
+
+      if (playerEvents.isNotEmpty) {
+        // Group events by action type
+        final eventsByAction = <EventType, List<Event>>{};
+        for (final event in playerEvents) {
+          eventsByAction.putIfAbsent(event.type, () => []).add(event);
         }
 
-        // Create a page for each player with this action type
-        for (final entry in eventsByPlayer.entries) {
-          final player = entry.key;
-          final playerEvents = entry.value;
-
-          pdf.addPage(
-            pw.Page(
-              pageFormat: PdfPageFormat.a4.landscape,
-              build: (pw.Context context) {
-                return pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    // Header with player name and action type
-                    pw.Text(
-                      '${player.fullName} - ${actionType.displayName} Visualization',
-                      style: pw.TextStyle(
-                        fontSize: 18,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4.landscape,
+            build: (pw.Context context) {
+              return pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Player header
+                  pw.Text(
+                    '${player.fullName} - Complete Analysis',
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
                     ),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      '${playerEvents.length} events recorded',
-                      style: pw.TextStyle(fontSize: 14),
-                    ),
-                    pw.SizedBox(height: 10),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Text(
+                    'Jersey #${player.jerseyNumber ?? 'N/A'} | ${playerEvents.length} total events',
+                    style: pw.TextStyle(fontSize: 14),
+                  ),
+                  pw.SizedBox(height: 16),
 
-                    // Player stats for this action type
-                    _buildPlayerActionStats(
-                      player,
-                      actionType,
-                      getPlayerServingStats,
-                      getPlayerPassingStats,
-                      getPlayerAttackingStats,
-                    ),
-                    pw.SizedBox(height: 20),
+                  // Player stats summary
+                  _buildPlayerStatsSummary(
+                    player,
+                    getPlayerServingStats,
+                    getPlayerPassingStats,
+                    getPlayerAttackingStats,
+                  ),
+                  pw.SizedBox(height: 20),
 
-                    // Court visualization
-                    pw.Expanded(
-                      child: pw.Center(
-                        child: _buildCourtVisualization(
-                          playerEvents,
-                          actionType,
+                  // Court visualizations for each action type
+                  pw.Expanded(
+                    child: pw.Row(
+                      children: [
+                        // Left column - courts
+                        pw.Expanded(
+                          flex: 2,
+                          child: pw.Column(
+                            children: [
+                              pw.Text(
+                                'Court Visualizations',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.SizedBox(height: 10),
+                              pw.Expanded(
+                                child: _buildPlayerCourtsGrid(eventsByAction),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        pw.SizedBox(width: 20),
+                        // Right column - detailed stats
+                        pw.Expanded(
+                          flex: 1,
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'Detailed Statistics',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.SizedBox(height: 10),
+                              pw.Expanded(
+                                child: _buildPlayerDetailedStats(
+                                  player,
+                                  eventsByAction,
+                                  getPlayerServingStats,
+                                  getPlayerPassingStats,
+                                  getPlayerAttackingStats,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              },
-            ),
-          );
-        }
+                  ),
+                ],
+              );
+            },
+          ),
+        );
       }
     }
 
@@ -279,9 +316,241 @@ class PdfService {
     }
   }
 
-  static pw.Widget _buildPlayerActionStats(
+  static String _formatPassingAverage(double average) {
+    if (average >= 3.0) return '3.000';
+    return average.toStringAsFixed(3);
+  }
+
+  static pw.Widget _buildPlayerStatsSummary(
     Player player,
+    Map<String, dynamic> Function(Player) getPlayerServingStats,
+    Map<String, dynamic> Function(Player) getPlayerPassingStats,
+    Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+  ) {
+    final servingStats = getPlayerServingStats(player);
+    final passingStats = getPlayerPassingStats(player);
+    final attackingStats = getPlayerAttackingStats(player);
+
+    final totalAttacks =
+        (attackingStats['kill'] ?? 0) +
+        (attackingStats['in'] ?? 0) +
+        (attackingStats['error'] ?? 0);
+    final kills = attackingStats['kill'] ?? 0;
+    final errors = attackingStats['error'] ?? 0;
+    final hitPercentage = totalAttacks > 0
+        ? (kills - errors) / totalAttacks
+        : 0.0;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+        children: [
+          // Serving stats
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'SERVING',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue,
+                ),
+              ),
+              pw.Text('Aces: ${servingStats['ace'] ?? 0}'),
+              pw.Text('In: ${servingStats['in'] ?? 0}'),
+              pw.Text('Errors: ${servingStats['error'] ?? 0}'),
+              pw.Text('Total: ${servingStats['total'] ?? 0}'),
+            ],
+          ),
+          // Passing stats
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'PASSING',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.green,
+                ),
+              ),
+              pw.Text('Aces: ${passingStats['ace'] ?? 0}'),
+              pw.Text('3s: ${passingStats['3'] ?? 0}'),
+              pw.Text('2s: ${passingStats['2'] ?? 0}'),
+              pw.Text('1s: ${passingStats['1'] ?? 0}'),
+              pw.Text('0s: ${passingStats['0'] ?? 0}'),
+              pw.Text(
+                'Avg: ${_formatPassingAverage(passingStats['average'] as double? ?? 0.0)}',
+              ),
+            ],
+          ),
+          // Attacking stats
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'ATTACKING',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.orange,
+                ),
+              ),
+              pw.Text('Kills: $kills'),
+              pw.Text('In: ${attackingStats['in'] ?? 0}'),
+              pw.Text('Errors: $errors'),
+              pw.Text('Total: $totalAttacks'),
+              pw.Text('Hit %: ${_formatHitPercentage(hitPercentage)}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildPlayerCourtsGrid(
+    Map<EventType, List<Event>> eventsByAction,
+  ) {
+    final actionTypes = EventType.values
+        .where(
+          (actionType) =>
+              eventsByAction.containsKey(actionType) &&
+              eventsByAction[actionType]!.isNotEmpty,
+        )
+        .toList();
+
+    if (actionTypes.isEmpty) {
+      return pw.Center(
+        child: pw.Text(
+          'No events recorded',
+          style: pw.TextStyle(fontSize: 14, color: PdfColors.grey),
+        ),
+      );
+    }
+
+    // Create a grid of courts - 2 columns max
+    final rows = <pw.Widget>[];
+    for (int i = 0; i < actionTypes.length; i += 2) {
+      final rowActions = <EventType>[];
+      if (i < actionTypes.length) rowActions.add(actionTypes[i]);
+      if (i + 1 < actionTypes.length) rowActions.add(actionTypes[i + 1]);
+
+      rows.add(
+        pw.Row(
+          children: rowActions.map((actionType) {
+            final events = eventsByAction[actionType]!;
+            return pw.Expanded(
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    actionType.displayName,
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _getEventColorPdf(actionType),
+                    ),
+                  ),
+                  pw.Text(
+                    '${events.length} events',
+                    style: pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.SizedBox(
+                    width: 280,
+                    height: 200,
+                    child: _buildCourtVisualization(events, actionType),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+
+      if (i + 2 < actionTypes.length) {
+        rows.add(pw.SizedBox(height: 16));
+      }
+    }
+
+    return pw.Column(children: rows);
+  }
+
+  static pw.Widget _buildPlayerDetailedStats(
+    Player player,
+    Map<EventType, List<Event>> eventsByAction,
+    Map<String, dynamic> Function(Player) getPlayerServingStats,
+    Map<String, dynamic> Function(Player) getPlayerPassingStats,
+    Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+  ) {
+    final statsWidgets = <pw.Widget>[];
+
+    for (final actionType in EventType.values) {
+      if (eventsByAction.containsKey(actionType) &&
+          eventsByAction[actionType]!.isNotEmpty) {
+        final events = eventsByAction[actionType]!;
+
+        statsWidgets.add(
+          pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 12),
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: _getEventColorPdf(actionType)),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  actionType.displayName.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _getEventColorPdf(actionType),
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Events: ${events.length}',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+                // Add specific stats based on action type
+                ..._buildActionSpecificStats(
+                  actionType,
+                  player,
+                  events,
+                  getPlayerServingStats,
+                  getPlayerPassingStats,
+                  getPlayerAttackingStats,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    if (statsWidgets.isEmpty) {
+      return pw.Center(
+        child: pw.Text(
+          'No detailed stats available',
+          style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+        ),
+      );
+    }
+
+    return pw.Column(children: statsWidgets);
+  }
+
+  static List<pw.Widget> _buildActionSpecificStats(
     EventType actionType,
+    Player player,
+    List<Event> events,
     Map<String, dynamic> Function(Player) getPlayerServingStats,
     Map<String, dynamic> Function(Player) getPlayerPassingStats,
     Map<String, dynamic> Function(Player) getPlayerAttackingStats,
@@ -289,63 +558,90 @@ class PdfService {
     switch (actionType) {
       case EventType.serve:
         final stats = getPlayerServingStats(player);
-        return pw.Row(
-          children: [
-            pw.Text(
-              'Serving Stats: ',
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text('Aces: ${stats['ace'] ?? 0} | '),
-            pw.Text('In: ${stats['in'] ?? 0} | '),
-            pw.Text('Errors: ${stats['error'] ?? 0} | '),
-            pw.Text('Total: ${stats['total'] ?? 0}'),
-          ],
-        );
+        return [
+          pw.Text(
+            'Aces: ${stats['ace'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            'In: ${stats['in'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            'Errors: ${stats['error'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+        ];
       case EventType.pass:
         final stats = getPlayerPassingStats(player);
-        return pw.Row(
-          children: [
-            pw.Text(
-              'Passing Stats: ',
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text('Aces: ${stats['ace'] ?? 0} | '),
-            pw.Text('3s: ${stats['3'] ?? 0} | '),
-            pw.Text('2s: ${stats['2'] ?? 0} | '),
-            pw.Text('1s: ${stats['1'] ?? 0} | '),
-            pw.Text('0s: ${stats['0'] ?? 0} | '),
-            pw.Text(
-              'Avg: ${_formatPassingAverage(stats['average'] as double? ?? 0.0)}',
-            ),
-          ],
-        );
+        return [
+          pw.Text(
+            'Aces: ${stats['ace'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            '3s: ${stats['3'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            '2s: ${stats['2'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            '1s: ${stats['1'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text(
+            '0s: ${stats['0'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+        ];
       case EventType.attack:
         final stats = getPlayerAttackingStats(player);
-        final total = stats['total'] ?? 0;
+        final total =
+            (stats['kill'] ?? 0) + (stats['in'] ?? 0) + (stats['error'] ?? 0);
         final kills = stats['kill'] ?? 0;
         final errors = stats['error'] ?? 0;
         final hitPercentage = total > 0 ? (kills - errors) / total : 0.0;
-        return pw.Row(
-          children: [
-            pw.Text(
-              'Attacking Stats: ',
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text('Kills: ${kills} | '),
-            pw.Text('In: ${stats['in'] ?? 0} | '),
-            pw.Text('Errors: ${errors} | '),
-            pw.Text('Total: ${total} | '),
-            pw.Text('Hit %: ${_formatHitPercentage(hitPercentage)}'),
-          ],
-        );
+        return [
+          pw.Text('Kills: $kills', style: const pw.TextStyle(fontSize: 9)),
+          pw.Text(
+            'In: ${stats['in'] ?? 0}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+          pw.Text('Errors: $errors', style: const pw.TextStyle(fontSize: 9)),
+          pw.Text(
+            'Hit %: ${_formatHitPercentage(hitPercentage)}',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+        ];
       default:
-        return pw.Text('Stats not available for ${actionType.displayName}');
+        return [
+          pw.Text(
+            '${events.length} events recorded',
+            style: const pw.TextStyle(fontSize: 9),
+          ),
+        ];
     }
   }
 
-  static String _formatPassingAverage(double average) {
-    if (average >= 3.0) return '3.000';
-    return average.toStringAsFixed(3);
+  static PdfColor _getEventColorPdf(EventType actionType) {
+    switch (actionType) {
+      case EventType.serve:
+        return PdfColors.cyan;
+      case EventType.pass:
+        return PdfColors.green;
+      case EventType.attack:
+        return PdfColors.orange;
+      case EventType.block:
+        return PdfColors.purple;
+      case EventType.dig:
+        return PdfColors.red;
+      case EventType.set:
+        return PdfColors.yellow;
+      case EventType.freeball:
+        return PdfColors.lime;
+    }
   }
 
   static pw.Widget _buildCourtVisualization(
