@@ -9,6 +9,9 @@ class PlayerStatsTable extends StatefulWidget {
   final Function(List<Event>) getPlayerServingStats;
   final Function(List<Event>) getPlayerPassingStats;
   final Function(List<Event>) getPlayerAttackingStats;
+  final Function(List<Event>) getPlayerBlockingStats;
+  final Function(List<Event>) getPlayerDigStats;
+  final Function(List<Event>) getPlayerSetStats;
 
   const PlayerStatsTable({
     super.key,
@@ -18,6 +21,9 @@ class PlayerStatsTable extends StatefulWidget {
     required this.getPlayerServingStats,
     required this.getPlayerPassingStats,
     required this.getPlayerAttackingStats,
+    required this.getPlayerBlockingStats,
+    required this.getPlayerDigStats,
+    required this.getPlayerSetStats,
   });
 
   @override
@@ -170,6 +176,12 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
         _buildPassingHeaders(),
         // Attacking Headers
         _buildAttackingHeaders(),
+        // Blocking Headers
+        _buildBlockingHeaders(),
+        // Dig Headers
+        _buildDigHeaders(),
+        // Set Headers
+        _buildSetHeaders(),
       ],
     );
   }
@@ -183,6 +195,9 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
         final servingStats = widget.getPlayerServingStats(playerEvents);
         final passingStats = widget.getPlayerPassingStats(playerEvents);
         final attackingStats = widget.getPlayerAttackingStats(playerEvents);
+        final blockingStats = widget.getPlayerBlockingStats(playerEvents);
+        final digStats = widget.getPlayerDigStats(playerEvents);
+        final setStats = widget.getPlayerSetStats(playerEvents);
 
         final total = attackingStats['total'] as int;
         final kill = attackingStats['kill'] as int;
@@ -202,6 +217,12 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
               _buildPassingDataRow(passingStats),
               // Attacking Data
               _buildAttackingDataRow(attackingStats, hitPercentageString),
+              // Blocking Data
+              _buildBlockingDataRow(blockingStats),
+              // Dig Data
+              _buildDigDataRow(digStats),
+              // Set Data
+              _buildSetDataRow(setStats),
             ],
           ),
         );
@@ -651,6 +672,248 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
       ),
+    );
+  }
+
+  Widget _buildBlockingHeaders() {
+    return Container(
+      width:
+          widget.columnWidths['Blocks']! +
+          widget.columnWidths['Solo']! +
+          widget.columnWidths['Assist']! +
+          widget.columnWidths['Error']!,
+      child: Column(
+        children: [
+          // Group Label
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6B6B).withOpacity(0.2),
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFFFF6B6B), width: 1),
+              ),
+            ),
+            child: const Text(
+              'Blocking',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF6B6B),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          // Column Headers
+          Row(
+            children: [
+              _buildHeaderCell(
+                'Blocks',
+                widget.columnWidths['Blocks']!,
+                const Color(0xFFFF6B6B),
+              ),
+              _buildHeaderCell(
+                'Solo',
+                widget.columnWidths['Solo']!,
+                const Color(0xFFFF6B6B),
+              ),
+              _buildHeaderCell(
+                'Assist',
+                widget.columnWidths['Assist']!,
+                const Color(0xFFFF6B6B),
+              ),
+              _buildHeaderCell(
+                'Error',
+                widget.columnWidths['Error']!,
+                const Color(0xFFFF6B6B),
+                isLast: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDigHeaders() {
+    return Container(
+      width:
+          widget.columnWidths['Digs']! +
+          widget.columnWidths['Overhand']! +
+          widget.columnWidths['Platform']!,
+      child: Column(
+        children: [
+          // Group Label
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF50).withOpacity(0.2),
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFF4CAF50), width: 1),
+              ),
+            ),
+            child: const Text(
+              'Dig',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4CAF50),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          // Column Headers
+          Row(
+            children: [
+              _buildHeaderCell(
+                'Digs',
+                widget.columnWidths['Digs']!,
+                const Color(0xFF4CAF50),
+              ),
+              _buildHeaderCell(
+                'Overhand',
+                widget.columnWidths['Overhand']!,
+                const Color(0xFF4CAF50),
+              ),
+              _buildHeaderCell(
+                'Platform',
+                widget.columnWidths['Platform']!,
+                const Color(0xFF4CAF50),
+                isLast: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSetHeaders() {
+    return Container(
+      width:
+          widget.columnWidths['Sets']! +
+          widget.columnWidths['In System']! +
+          widget.columnWidths['Out of System']!,
+      child: Column(
+        children: [
+          // Group Label
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2196F3).withOpacity(0.2),
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFF2196F3), width: 1),
+              ),
+            ),
+            child: const Text(
+              'Set',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2196F3),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          // Column Headers
+          Row(
+            children: [
+              _buildHeaderCell(
+                'Sets',
+                widget.columnWidths['Sets']!,
+                const Color(0xFF2196F3),
+              ),
+              _buildHeaderCell(
+                'In System',
+                widget.columnWidths['In System']!,
+                const Color(0xFF2196F3),
+              ),
+              _buildHeaderCell(
+                'Out of System',
+                widget.columnWidths['Out of System']!,
+                const Color(0xFF2196F3),
+                isLast: true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockingDataRow(Map<String, int> blockingStats) {
+    return Row(
+      children: [
+        _buildDataCell(
+          blockingStats['total'].toString(),
+          widget.columnWidths['Blocks']!,
+          const Color(0xFFFF6B6B),
+        ),
+        _buildDataCell(
+          blockingStats['solo'].toString(),
+          widget.columnWidths['Solo']!,
+          const Color(0xFFFF6B6B),
+        ),
+        _buildDataCell(
+          blockingStats['assist'].toString(),
+          widget.columnWidths['Assist']!,
+          const Color(0xFFFF6B6B),
+        ),
+        _buildDataCell(
+          blockingStats['error'].toString(),
+          widget.columnWidths['Error']!,
+          const Color(0xFFFF6B6B),
+          isLast: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDigDataRow(Map<String, int> digStats) {
+    return Row(
+      children: [
+        _buildDataCell(
+          digStats['total'].toString(),
+          widget.columnWidths['Digs']!,
+          const Color(0xFF4CAF50),
+        ),
+        _buildDataCell(
+          digStats['overhand'].toString(),
+          widget.columnWidths['Overhand']!,
+          const Color(0xFF4CAF50),
+        ),
+        _buildDataCell(
+          digStats['platform'].toString(),
+          widget.columnWidths['Platform']!,
+          const Color(0xFF4CAF50),
+          isLast: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSetDataRow(Map<String, int> setStats) {
+    return Row(
+      children: [
+        _buildDataCell(
+          setStats['total'].toString(),
+          widget.columnWidths['Sets']!,
+          const Color(0xFF2196F3),
+        ),
+        _buildDataCell(
+          setStats['in_system'].toString(),
+          widget.columnWidths['In System']!,
+          const Color(0xFF2196F3),
+        ),
+        _buildDataCell(
+          setStats['out_of_system'].toString(),
+          widget.columnWidths['Out of System']!,
+          const Color(0xFF2196F3),
+          isLast: true,
+        ),
+      ],
     );
   }
 }

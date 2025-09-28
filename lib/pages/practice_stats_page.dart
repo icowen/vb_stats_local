@@ -2186,6 +2186,57 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     return stats;
   }
 
+  Map<String, int> _getPlayerBlockingStats(List<Event> playerEvents) {
+    final blockEvents = playerEvents
+        .where((e) => e.type == EventType.block)
+        .toList();
+    final stats = <String, int>{'solo': 0, 'assist': 0, 'error': 0, 'total': 0};
+
+    for (final event in blockEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerDigStats(List<Event> playerEvents) {
+    final digEvents = playerEvents
+        .where((e) => e.type == EventType.dig)
+        .toList();
+    final stats = <String, int>{'overhand': 0, 'platform': 0, 'total': 0};
+
+    for (final event in digEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerSetStats(List<Event> playerEvents) {
+    final setEvents = playerEvents
+        .where((e) => e.type == EventType.set)
+        .toList();
+    final stats = <String, int>{'in_system': 0, 'out_of_system': 0, 'total': 0};
+
+    for (final event in setEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
   Widget _buildTeamStatsTable() {
     if (_teamPlayers.isEmpty) {
       return const Center(
@@ -2227,6 +2278,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       getPlayerServingStats: _getPlayerServingStats,
       getPlayerPassingStats: _getPlayerPassingStats,
       getPlayerAttackingStats: _getPlayerAttackingStats,
+      getPlayerBlockingStats: _getPlayerBlockingStats,
+      getPlayerDigStats: _getPlayerDigStats,
+      getPlayerSetStats: _getPlayerSetStats,
     );
   }
 

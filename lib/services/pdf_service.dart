@@ -17,6 +17,9 @@ class PdfService {
     required Map<String, dynamic> Function(Player) getPlayerServingStats,
     required Map<String, dynamic> Function(Player) getPlayerPassingStats,
     required Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+    required Map<String, int> Function(Player) getPlayerBlockingStats,
+    required Map<String, int> Function(Player) getPlayerDigStats,
+    required Map<String, int> Function(Player) getPlayerSetStats,
   }) async {
     final pdf = pw.Document();
 
@@ -84,6 +87,9 @@ class PdfService {
             getPlayerServingStats,
             getPlayerPassingStats,
             getPlayerAttackingStats,
+            getPlayerBlockingStats,
+            getPlayerDigStats,
+            getPlayerSetStats,
           ),
         ],
       ),
@@ -301,6 +307,9 @@ class PdfService {
     Map<String, dynamic> Function(Player) getPlayerServingStats,
     Map<String, dynamic> Function(Player) getPlayerPassingStats,
     Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+    Map<String, int> Function(Player) getPlayerBlockingStats,
+    Map<String, int> Function(Player) getPlayerDigStats,
+    Map<String, int> Function(Player) getPlayerSetStats,
   ) {
     final tableHeaders = [
       'Player',
@@ -317,6 +326,13 @@ class PdfService {
       'A.In',
       'A.Err',
       'Hit %',
+      'B.Solo',
+      'B.Assist',
+      'B.Error',
+      'D.Over',
+      'D.Plat',
+      'S.InSys',
+      'S.OutSys',
     ];
 
     return pw.Table.fromTextArray(
@@ -325,6 +341,9 @@ class PdfService {
         final servingStats = getPlayerServingStats(player);
         final passingStats = getPlayerPassingStats(player);
         final attackingStats = getPlayerAttackingStats(player);
+        final blockingStats = getPlayerBlockingStats(player);
+        final digStats = getPlayerDigStats(player);
+        final setStats = getPlayerSetStats(player);
 
         final totalAttacks =
             (attackingStats['kill'] ?? 0) +
@@ -351,6 +370,13 @@ class PdfService {
           (attackingStats['in'] ?? 0).toString(),
           (attackingStats['error'] ?? 0).toString(),
           _formatHitPercentage(hitPercentage),
+          (blockingStats['solo'] ?? 0).toString(),
+          (blockingStats['assist'] ?? 0).toString(),
+          (blockingStats['error'] ?? 0).toString(),
+          (digStats['overhand'] ?? 0).toString(),
+          (digStats['platform'] ?? 0).toString(),
+          (setStats['in_system'] ?? 0).toString(),
+          (setStats['out_of_system'] ?? 0).toString(),
         ];
       }).toList(),
       cellAlignment: pw.Alignment.center,

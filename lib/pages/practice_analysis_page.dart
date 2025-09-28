@@ -413,6 +413,93 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       widths[header] = math.max((maxLength * 8) + 16, minWidth);
     }
 
+    // Blocking columns
+    List<String> blockingHeaders = ['Blocks', 'Solo', 'Assist', 'Error'];
+    for (String header in blockingHeaders) {
+      double maxLength = header.length.toDouble();
+      for (var player in _practicePlayers) {
+        final playerEvents = _teamEvents
+            .where((e) => e.player.id == player.id)
+            .toList();
+        final stats = _getPlayerBlockingStats(playerEvents);
+        String value = '';
+        switch (header) {
+          case 'Blocks':
+            value = '${stats['total']}';
+            break;
+          case 'Solo':
+            value = '${stats['solo']}';
+            break;
+          case 'Assist':
+            value = '${stats['assist']}';
+            break;
+          case 'Error':
+            value = '${stats['error']}';
+            break;
+        }
+        maxLength = math.max(maxLength, value.length.toDouble());
+      }
+      // Set minimum width
+      double minWidth = 40.0; // Minimum width for all columns
+      widths[header] = math.max((maxLength * 8) + 16, minWidth);
+    }
+
+    // Dig columns
+    List<String> digHeaders = ['Digs', 'Overhand', 'Platform'];
+    for (String header in digHeaders) {
+      double maxLength = header.length.toDouble();
+      for (var player in _practicePlayers) {
+        final playerEvents = _teamEvents
+            .where((e) => e.player.id == player.id)
+            .toList();
+        final stats = _getPlayerDigStats(playerEvents);
+        String value = '';
+        switch (header) {
+          case 'Digs':
+            value = '${stats['total']}';
+            break;
+          case 'Overhand':
+            value = '${stats['overhand']}';
+            break;
+          case 'Platform':
+            value = '${stats['platform']}';
+            break;
+        }
+        maxLength = math.max(maxLength, value.length.toDouble());
+      }
+      // Set minimum width
+      double minWidth = 40.0; // Minimum width for all columns
+      widths[header] = math.max((maxLength * 8) + 16, minWidth);
+    }
+
+    // Set columns
+    List<String> setHeaders = ['Sets', 'In System', 'Out of System'];
+    for (String header in setHeaders) {
+      double maxLength = header.length.toDouble();
+      for (var player in _practicePlayers) {
+        final playerEvents = _teamEvents
+            .where((e) => e.player.id == player.id)
+            .toList();
+        final stats = _getPlayerSetStats(playerEvents);
+        String value = '';
+        switch (header) {
+          case 'Sets':
+            value = '${stats['total']}';
+            break;
+          case 'In System':
+            value = '${stats['in_system']}';
+            break;
+          case 'Out of System':
+            value = '${stats['out_of_system']}';
+            break;
+        }
+        maxLength = math.max(maxLength, value.length.toDouble());
+      }
+      // Set minimum width
+      double minWidth = 40.0; // Minimum width for all columns
+      widths[header] = math.max((maxLength * 8) + 16, minWidth);
+    }
+
     return widths;
   }
 
@@ -610,6 +697,9 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       getPlayerServingStats: _getPlayerServingStats,
       getPlayerPassingStats: _getPlayerPassingStats,
       getPlayerAttackingStats: _getPlayerAttackingStats,
+      getPlayerBlockingStats: _getPlayerBlockingStats,
+      getPlayerDigStats: _getPlayerDigStats,
+      getPlayerSetStats: _getPlayerSetStats,
     );
   }
 
@@ -766,6 +856,57 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       stats['total'] = (stats['total'] ?? 0) + 1;
       if (result != null && stats.containsKey(result)) {
         stats[result] = (stats[result] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerBlockingStats(List<Event> playerEvents) {
+    final blockEvents = playerEvents
+        .where((e) => e.type == EventType.block)
+        .toList();
+    final stats = <String, int>{'solo': 0, 'assist': 0, 'error': 0, 'total': 0};
+
+    for (final event in blockEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerDigStats(List<Event> playerEvents) {
+    final digEvents = playerEvents
+        .where((e) => e.type == EventType.dig)
+        .toList();
+    final stats = <String, int>{'overhand': 0, 'platform': 0, 'total': 0};
+
+    for (final event in digEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
+      }
+    }
+
+    return stats;
+  }
+
+  Map<String, int> _getPlayerSetStats(List<Event> playerEvents) {
+    final setEvents = playerEvents
+        .where((e) => e.type == EventType.set)
+        .toList();
+    final stats = <String, int>{'in_system': 0, 'out_of_system': 0, 'total': 0};
+
+    for (final event in setEvents) {
+      final type = event.metadata['type'] as String?;
+      stats['total'] = (stats['total'] ?? 0) + 1;
+      if (type != null && stats.containsKey(type)) {
+        stats[type] = (stats[type] ?? 0) + 1;
       }
     }
 
@@ -1160,6 +1301,15 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
             _teamEvents.where((e) => e.player.id == player.id).toList(),
           ),
           getPlayerAttackingStats: (player) => _getPlayerAttackingStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+          getPlayerBlockingStats: (player) => _getPlayerBlockingStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+          getPlayerDigStats: (player) => _getPlayerDigStats(
+            _teamEvents.where((e) => e.player.id == player.id).toList(),
+          ),
+          getPlayerSetStats: (player) => _getPlayerSetStats(
             _teamEvents.where((e) => e.player.id == player.id).toList(),
           ),
         );
