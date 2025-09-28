@@ -82,6 +82,15 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   String? _selectedFreeballAction; // 'sent' or 'received'
   String? _selectedFreeballResult; // 'good' or 'bad' (for received only)
 
+  // Blocking action selection
+  String? _selectedBlockingType; // 'solo', 'assist', or 'error'
+
+  // Dig action selection
+  String? _selectedDigType; // 'overhand' or 'platform'
+
+  // Set action selection
+  String? _selectedSetType; // 'in_system' or 'out_of_system'
+
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
 
@@ -472,6 +481,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _selectedAttackMetadata.clear(); // Clear attack metadata
         _selectedFreeballAction = null; // Clear freeball action selection
         _selectedFreeballResult = null; // Clear freeball result selection
+        _selectedBlockingType = null; // Clear blocking type selection
+        _selectedDigType = null; // Clear dig type selection
+        _selectedSetType = null; // Clear set type selection
         // Keep coordinates when unselecting player
         _isLoadingPlayerStats = false;
       });
@@ -1396,6 +1408,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         return _buildPassForm(formData, setModalState);
       case 'attack':
         return _buildAttackForm(formData, setModalState);
+      case 'block':
+        return _buildBlockingForm(formData, setModalState);
+      case 'dig':
+        return _buildDigForm(formData, setModalState);
+      case 'set':
+        return _buildSetForm(formData, setModalState);
       default:
         return const Text('Unknown event type');
     }
@@ -1583,6 +1601,123 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                 'error',
                 result == 'error',
                 () => setModalState(() => formData['result'] = 'error'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBlockingForm(
+    Map<String, dynamic> formData,
+    StateSetter setModalState,
+  ) {
+    final type = formData['type'] as String? ?? 'solo';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Blocking Type', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildToggleButton(
+                'Solo',
+                'solo',
+                type == 'solo',
+                () => setModalState(() => formData['type'] = 'solo'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildToggleButton(
+                'Assist',
+                'assist',
+                type == 'assist',
+                () => setModalState(() => formData['type'] = 'assist'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildToggleButton(
+                'Error',
+                'error',
+                type == 'error',
+                () => setModalState(() => formData['type'] = 'error'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDigForm(
+    Map<String, dynamic> formData,
+    StateSetter setModalState,
+  ) {
+    final type = formData['type'] as String? ?? 'overhand';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Dig Type', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildToggleButton(
+                'Overhand',
+                'overhand',
+                type == 'overhand',
+                () => setModalState(() => formData['type'] = 'overhand'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildToggleButton(
+                'Platform',
+                'platform',
+                type == 'platform',
+                () => setModalState(() => formData['type'] = 'platform'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSetForm(
+    Map<String, dynamic> formData,
+    StateSetter setModalState,
+  ) {
+    final type = formData['type'] as String? ?? 'in_system';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Set Type', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildToggleButton(
+                'In System',
+                'in_system',
+                type == 'in_system',
+                () => setModalState(() => formData['type'] = 'in_system'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildToggleButton(
+                'Out of System',
+                'out_of_system',
+                type == 'out_of_system',
+                () => setModalState(() => formData['type'] = 'out_of_system'),
               ),
             ),
           ],
@@ -2525,6 +2660,203 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 4),
+                // Third Row: Blocking, Dig, and Set
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      // Blocking Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFFFF6B6B),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              children: [
+                                // Blocking Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'BLOCKING',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFFFF6B6B),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Blocking Types
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Solo',
+                                        const Color(0xFFFF6B6B),
+                                        () => _selectBlockingType('solo'),
+                                        _selectedBlockingType == 'solo',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Assist',
+                                        const Color(0xFFFF6B6B),
+                                        () => _selectBlockingType('assist'),
+                                        _selectedBlockingType == 'assist',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Error',
+                                        const Color(0xFFFF6B6B),
+                                        () => _selectBlockingType('error'),
+                                        _selectedBlockingType == 'error',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
+
+                      // Dig Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF4CAF50),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              children: [
+                                // Dig Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'DIG',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF4CAF50),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Dig Types
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Overhand',
+                                        const Color(0xFF4CAF50),
+                                        () => _selectDigType('overhand'),
+                                        _selectedDigType == 'overhand',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Platform',
+                                        const Color(0xFF4CAF50),
+                                        () => _selectDigType('platform'),
+                                        _selectedDigType == 'platform',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 4),
+
+                      // Set Column
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF2196F3),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Column(
+                              children: [
+                                // Set Title
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: const Text(
+                                    'SET',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF2196F3),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                // Set Types
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'In System',
+                                        const Color(0xFF2196F3),
+                                        () => _selectSetType('in_system'),
+                                        _selectedSetType == 'in_system',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: _buildCompactButton(
+                                        'Out of System',
+                                        const Color(0xFF2196F3),
+                                        () => _selectSetType('out_of_system'),
+                                        _selectedSetType == 'out_of_system',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -2744,6 +3076,15 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedFreeballAction != null) {
       return true;
     }
+    if (_selectedBlockingType != null) {
+      return true;
+    }
+    if (_selectedDigType != null) {
+      return true;
+    }
+    if (_selectedSetType != null) {
+      return true;
+    }
 
     return false;
   }
@@ -2761,6 +3102,15 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedFreeballAction != null) {
       return const Color(0xFF9C27B0); // Purple for freeball
     }
+    if (_selectedBlockingType != null) {
+      return const Color(0xFFFF6B6B); // Red for blocking
+    }
+    if (_selectedDigType != null) {
+      return const Color(0xFF4CAF50); // Green for dig
+    }
+    if (_selectedSetType != null) {
+      return const Color(0xFF2196F3); // Blue for set
+    }
     return Colors.grey;
   }
 
@@ -2777,6 +3127,15 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     if (_selectedFreeballAction != null) {
       return 'Save Freeball';
     }
+    if (_selectedBlockingType != null) {
+      return 'Save Block';
+    }
+    if (_selectedDigType != null) {
+      return 'Save Dig';
+    }
+    if (_selectedSetType != null) {
+      return 'Save Set';
+    }
     return 'Select Action';
   }
 
@@ -2789,6 +3148,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       _saveAttackAction();
     } else if (_selectedFreeballAction != null) {
       _saveFreeballAction();
+    } else if (_selectedBlockingType != null) {
+      _saveBlockingAction();
+    } else if (_selectedDigType != null) {
+      _saveDigAction();
+    } else if (_selectedSetType != null) {
+      _saveSetAction();
     }
   }
 
@@ -2982,6 +3347,61 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         // Select the new result
         _selectedFreeballResult = result;
       }
+    });
+  }
+
+  void _selectBlockingType(String type) {
+    setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
+      _selectedDigType = null;
+
+      // Set blocking type
+      _selectedBlockingType = type;
+    });
+  }
+
+  void _selectDigType(String type) {
+    setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
+      _selectedBlockingType = null;
+
+      // Set dig type
+      _selectedDigType = type;
+    });
+  }
+
+  void _selectSetType(String type) {
+    setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
+      _selectedBlockingType = null;
+      _selectedDigType = null;
+
+      // Set set type
+      _selectedSetType = type;
     });
   }
 
@@ -3329,6 +3749,233 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving freeball action: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveBlockingAction() async {
+    if (_selectedPlayer == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
+    // Create metadata map with blocking type
+    final metadata = <String, dynamic>{
+      'type': _selectedBlockingType ?? 'unknown',
+    };
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.block,
+      metadata: metadata,
+      timestamp: DateTime.now(),
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
+        _selectedBlockingType = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Block saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving blocking action: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveDigAction() async {
+    if (_selectedPlayer == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
+    // Create metadata map with dig type
+    final metadata = <String, dynamic>{'type': _selectedDigType ?? 'unknown'};
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.dig,
+      metadata: metadata,
+      timestamp: DateTime.now(),
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
+        _selectedDigType = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Dig saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving dig action: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveSetAction() async {
+    if (_selectedPlayer == null) {
+      return;
+    }
+
+    final team = widget.practice.team;
+
+    // Normalize coordinates so first point is always on left half
+    final normalizedCoords = _normalizeCoordinates(
+      _startX,
+      _startY,
+      _endX,
+      _endY,
+    );
+
+    // Create metadata map with set type
+    final metadata = <String, dynamic>{'type': _selectedSetType ?? 'unknown'};
+
+    final tempEvent = Event(
+      id: DateTime.now().millisecondsSinceEpoch,
+      practice: widget.practice,
+      match: null,
+      player: _selectedPlayer!,
+      team: team,
+      type: EventType.set,
+      metadata: metadata,
+      timestamp: DateTime.now(),
+      fromX: normalizedCoords['fromX'],
+      fromY: normalizedCoords['fromY'],
+      toX: normalizedCoords['toX'],
+      toY: normalizedCoords['toY'],
+    );
+
+    try {
+      await _eventService.insertEvent(tempEvent);
+
+      setState(() {
+        _selectedPlayer = null;
+        _selectedActionType = null;
+        _selectedSetType = null;
+        _isRecordingCoordinates = false;
+        _recordingAction = null;
+        _hasStartPoint = false;
+        _startX = null;
+        _startY = null;
+        _endX = null;
+        _endY = null;
+        _displayStartX = null;
+        _displayStartY = null;
+        _displayEndX = null;
+        _displayEndY = null;
+      });
+
+      await _loadTeamPlayers();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Set saved for ${tempEvent.player.firstName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving set action: $e'),
             backgroundColor: Colors.red,
           ),
         );
