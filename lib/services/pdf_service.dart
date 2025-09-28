@@ -89,6 +89,29 @@ class PdfService {
       ),
     );
 
+    // Add Team Statistics Page
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) => [
+          pw.Center(
+            child: pw.Text(
+              'Team Statistics',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+          pw.SizedBox(height: 20),
+          _buildTeamStatsCharts(
+            practicePlayers,
+            teamEvents,
+            getPlayerServingStats,
+            getPlayerPassingStats,
+            getPlayerAttackingStats,
+          ),
+        ],
+      ),
+    );
+
     // Add individual pages for each player with all their actions
     for (final player in practicePlayers) {
       final playerEvents = teamEvents
@@ -827,6 +850,390 @@ class PdfService {
         return "#FFFF00"; // Yellow
       case EventType.freeball:
         return "#00FF00"; // Bright green
+    }
+  }
+
+  static pw.Widget _buildTeamStatsCharts(
+    List<Player> practicePlayers,
+    List<Event> teamEvents,
+    Map<String, dynamic> Function(Player) getPlayerServingStats,
+    Map<String, dynamic> Function(Player) getPlayerPassingStats,
+    Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Team Highlights Section
+        pw.Text(
+          'Team Highlights',
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 10),
+        _buildTeamHighlights(
+          practicePlayers,
+          teamEvents,
+          getPlayerServingStats,
+          getPlayerPassingStats,
+          getPlayerAttackingStats,
+        ),
+        pw.SizedBox(height: 30),
+
+        // Charts Section
+        pw.Text(
+          'Team Performance Charts',
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 15),
+
+        // Row of charts
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            // Passing Chart
+            pw.Expanded(
+              child: _buildPassingChart(
+                practicePlayers,
+                teamEvents,
+                getPlayerPassingStats,
+              ),
+            ),
+            pw.SizedBox(width: 15),
+            // Serving Chart
+            pw.Expanded(
+              child: _buildServingChart(
+                practicePlayers,
+                teamEvents,
+                getPlayerServingStats,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _buildTeamHighlights(
+    List<Player> practicePlayers,
+    List<Event> teamEvents,
+    Map<String, dynamic> Function(Player) getPlayerServingStats,
+    Map<String, dynamic> Function(Player) getPlayerPassingStats,
+    Map<String, dynamic> Function(Player) getPlayerAttackingStats,
+  ) {
+    // Calculate team totals from raw data
+    int totalServes = 0;
+    int totalAces = 0;
+    int totalServeErrors = 0;
+    int totalServeIn = 0;
+    int totalPasses = 0;
+    int totalPassingPoints = 0;
+    int totalAttacks = 0;
+    int totalKills = 0;
+    int totalErrors = 0;
+
+    for (final player in practicePlayers) {
+      final servingStats = getPlayerServingStats(player);
+      final passingStats = getPlayerPassingStats(player);
+      final attackingStats = getPlayerAttackingStats(player);
+
+      totalServes += (servingStats['total'] ?? 0) as int;
+      totalAces += (servingStats['ace'] ?? 0) as int;
+      totalServeErrors += (servingStats['error'] ?? 0) as int;
+      totalServeIn += (servingStats['in'] ?? 0) as int;
+
+      // Calculate passing points from individual ratings
+      totalPasses += (passingStats['total'] ?? 0) as int;
+      totalPassingPoints +=
+          ((passingStats['ace'] ?? 0) as int) * 3; // Ace = 3 points
+      totalPassingPoints +=
+          ((passingStats['3'] ?? 0) as int) * 3; // 3 = 3 points
+      totalPassingPoints +=
+          ((passingStats['2'] ?? 0) as int) * 2; // 2 = 2 points
+      totalPassingPoints +=
+          ((passingStats['1'] ?? 0) as int) * 1; // 1 = 1 point
+      totalPassingPoints +=
+          ((passingStats['0'] ?? 0) as int) * 0; // 0 = 0 points
+
+      totalAttacks += (attackingStats['total'] ?? 0) as int;
+      totalKills += (attackingStats['kill'] ?? 0) as int;
+      totalErrors += (attackingStats['error'] ?? 0) as int;
+    }
+
+    // Calculate correct percentages
+    // For serving %, only count serves with results (in + ace + error)
+    final servesWithResults = totalServeIn + totalAces + totalServeErrors;
+    final servingPercentage = servesWithResults > 0
+        ? (totalServeIn + totalAces) / servesWithResults
+        : 0.0;
+    final passingAverage = totalPasses > 0
+        ? totalPassingPoints / totalPasses
+        : 0.0;
+    final hitPercentage = totalAttacks > 0
+        ? (totalKills - totalErrors) / totalAttacks
+        : 0.0;
+
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildHighlightCard(
+          'Total Serves',
+          totalServes.toString(),
+          '${(servingPercentage * 100).toStringAsFixed(1)}% In',
+        ),
+        _buildHighlightCard(
+          'Total Passes',
+          totalPasses.toString(),
+          'Avg: ${passingAverage.toStringAsFixed(2)}',
+        ),
+        _buildHighlightCard(
+          'Total Attacks',
+          totalAttacks.toString(),
+          'Hit %: ${_formatHitPercentage(hitPercentage)}',
+        ),
+        _buildHighlightCard(
+          'Total Aces',
+          totalAces.toString(),
+          'Errors: $totalServeErrors',
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _buildHighlightCard(
+    String title,
+    String value,
+    String subtitle,
+  ) {
+    return pw.Container(
+      width: 120,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.SizedBox(height: 5),
+          pw.Text(
+            value,
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.Text(
+            subtitle,
+            style: pw.TextStyle(fontSize: 10),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildPassingChart(
+    List<Player> practicePlayers,
+    List<Event> teamEvents,
+    Map<String, dynamic> Function(Player) getPlayerPassingStats,
+  ) {
+    // Calculate total passing ratings
+    final totalRatings = <String, int>{
+      'ace': 0,
+      '0': 0,
+      '1': 0,
+      '2': 0,
+      '3': 0,
+    };
+
+    for (final player in practicePlayers) {
+      final passingStats = getPlayerPassingStats(player);
+      for (final rating in totalRatings.keys) {
+        totalRatings[rating] =
+            (totalRatings[rating] ?? 0) + ((passingStats[rating] ?? 0) as int);
+      }
+    }
+
+    final totalPasses = totalRatings.values.reduce((a, b) => a + b);
+    if (totalPasses == 0) {
+      return pw.Container(
+        height: 200,
+        child: pw.Center(child: pw.Text('No passing data available')),
+      );
+    }
+
+    // Find the maximum count for proper scaling
+    final maxCount = totalRatings.values.reduce((a, b) => a > b ? a : b);
+
+    return pw.Container(
+      height: 250,
+      padding: const pw.EdgeInsets.all(15),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Passing Distribution',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Expanded(
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                for (final entry in totalRatings.entries)
+                  pw.Expanded(
+                    child: pw.Column(
+                      mainAxisAlignment: pw.MainAxisAlignment.end,
+                      children: [
+                        pw.Container(
+                          height: maxCount > 0
+                              ? (entry.value / maxCount) * 150
+                              : 0,
+                          margin: const pw.EdgeInsets.symmetric(horizontal: 2),
+                          decoration: pw.BoxDecoration(
+                            color: _getPassingRatingColor(entry.key),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          entry.key,
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          entry.value.toString(),
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildServingChart(
+    List<Player> practicePlayers,
+    List<Event> teamEvents,
+    Map<String, dynamic> Function(Player) getPlayerServingStats,
+  ) {
+    // Calculate total serving types
+    final servingTypes = <String, int>{'float': 0, 'hybrid': 0, 'spin': 0};
+
+    for (final player in practicePlayers) {
+      final servingStats = getPlayerServingStats(player);
+      for (final type in servingTypes.keys) {
+        final count = (servingStats[type] ?? 0) as int;
+        servingTypes[type] = (servingTypes[type] ?? 0) + count;
+      }
+    }
+
+    final totalServes = servingTypes.values.reduce((a, b) => a + b);
+    if (totalServes == 0) {
+      return pw.Container(
+        height: 200,
+        child: pw.Center(child: pw.Text('No serving data available')),
+      );
+    }
+
+    // Find the maximum count for proper scaling
+    final maxCount = servingTypes.values.reduce((a, b) => a > b ? a : b);
+
+    return pw.Container(
+      height: 250,
+      padding: const pw.EdgeInsets.all(15),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Serving Types',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Expanded(
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                for (final entry in servingTypes.entries)
+                  pw.Expanded(
+                    child: pw.Column(
+                      mainAxisAlignment: pw.MainAxisAlignment.end,
+                      children: [
+                        pw.Container(
+                          height: maxCount > 0
+                              ? (entry.value / maxCount) * 150
+                              : 0,
+                          margin: const pw.EdgeInsets.symmetric(horizontal: 2),
+                          decoration: pw.BoxDecoration(
+                            color: _getServingTypeColor(entry.key),
+                            borderRadius: pw.BorderRadius.circular(4),
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          entry.key.toUpperCase(),
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          entry.value.toString(),
+                          style: pw.TextStyle(fontSize: 9),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static PdfColor _getPassingRatingColor(String rating) {
+    switch (rating) {
+      case 'ace':
+        return PdfColors.green;
+      case '3':
+        return PdfColors.green300;
+      case '2':
+        return PdfColors.orange;
+      case '1':
+        return PdfColors.orange300;
+      case '0':
+        return PdfColors.red;
+      default:
+        return PdfColors.grey;
+    }
+  }
+
+  static PdfColor _getServingTypeColor(String type) {
+    switch (type) {
+      case 'float':
+        return PdfColors.blue;
+      case 'hybrid':
+        return PdfColors.purple;
+      case 'spin':
+        return PdfColors.red;
+      default:
+        return PdfColors.grey;
     }
   }
 }

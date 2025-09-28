@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import '../models/player.dart';
 import '../models/event.dart';
 
-class ServingPieChart extends StatelessWidget {
+class ServingPieChart extends StatefulWidget {
   final List<Player> practicePlayers;
   final List<Event> teamEvents;
   final Map<String, dynamic> Function(List<Event>) getPlayerServingStats;
@@ -16,17 +16,22 @@ class ServingPieChart extends StatelessWidget {
   });
 
   @override
+  State<ServingPieChart> createState() => _ServingPieChartState();
+}
+
+class _ServingPieChartState extends State<ServingPieChart> {
+  @override
   Widget build(BuildContext context) {
     // Calculate total serving types across all players
     final servingTypes = <String, int>{'float': 0, 'hybrid': 0, 'spin': 0};
     final servingResults = <String, Map<String, int>>{
-      'float': {'in': 0, 'error': 0, 'total': 0},
-      'hybrid': {'in': 0, 'error': 0, 'total': 0},
-      'spin': {'in': 0, 'error': 0, 'total': 0},
+      'float': {'in': 0, 'ace': 0, 'error': 0, 'total': 0},
+      'hybrid': {'in': 0, 'ace': 0, 'error': 0, 'total': 0},
+      'spin': {'in': 0, 'ace': 0, 'error': 0, 'total': 0},
     };
 
     // Process each serve event to get accurate results per serve type
-    final serveEvents = teamEvents
+    final serveEvents = widget.teamEvents
         .where((e) => e.type == EventType.serve)
         .toList();
 
@@ -38,16 +43,19 @@ class ServingPieChart extends StatelessWidget {
           (serveType == 'float' ||
               serveType == 'hybrid' ||
               serveType == 'spin')) {
-        // Count serve types
+        // Count all serves with serve types as attempts
         servingTypes[serveType] = (servingTypes[serveType] ?? 0) + 1;
         servingResults[serveType]!['total'] =
             (servingResults[serveType]!['total'] ?? 0) + 1;
 
-        // Count results for this specific serve type
+        // Count results for this specific serve type (only if result exists)
         if (result != null) {
-          if (result == 'in' || result == 'ace') {
+          if (result == 'in') {
             servingResults[serveType]!['in'] =
                 (servingResults[serveType]!['in'] ?? 0) + 1;
+          } else if (result == 'ace') {
+            servingResults[serveType]!['ace'] =
+                (servingResults[serveType]!['ace'] ?? 0) + 1;
           } else if (result == 'error') {
             servingResults[serveType]!['error'] =
                 (servingResults[serveType]!['error'] ?? 0) + 1;
@@ -71,7 +79,7 @@ class ServingPieChart extends StatelessWidget {
       totalErrors += results['error'] ?? 0;
     }
 
-    // Calculate aces separately from serve events
+    // Calculate aces separately from serve events (aces are already included in totalMakes)
     for (final event in serveEvents) {
       final result = event.metadata['result'] as String?;
       if (result == 'ace') {
@@ -206,20 +214,22 @@ class ServingPieChart extends StatelessWidget {
   ) {
     // Calculate totals for "All" bar
     int totalMakes = 0;
+    int totalAces = 0;
     int totalErrors = 0;
-    int totalAttempts = 0;
 
     for (final results in servingResults.values) {
       totalMakes += results['in'] ?? 0;
+      totalAces += results['ace'] ?? 0;
       totalErrors += results['error'] ?? 0;
-      totalAttempts += results['total'] ?? 0;
     }
 
-    final allMakePercentage = totalAttempts > 0
-        ? totalMakes / totalAttempts
+    final totalSuccessful = totalMakes + totalAces;
+    final totalWithResults = totalSuccessful + totalErrors;
+    final allMakePercentage = totalWithResults > 0
+        ? totalSuccessful / totalWithResults
         : 0.0;
-    final allMissPercentage = totalAttempts > 0
-        ? totalErrors / totalAttempts
+    final allMissPercentage = totalWithResults > 0
+        ? totalErrors / totalWithResults
         : 0.0;
 
     return Column(
@@ -242,13 +252,19 @@ class ServingPieChart extends StatelessWidget {
               ...servingResults.entries.map((entry) {
                 final serveType = entry.key;
                 final results = entry.value;
-                final total = results['total'] ?? 0;
                 final inCount = results['in'] ?? 0;
+                final aceCount = results['ace'] ?? 0;
                 final errorCount = results['error'] ?? 0;
 
-                // Calculate actual percentages for this serve type
-                final makePercentage = total > 0 ? inCount / total : 0.0;
-                final missPercentage = total > 0 ? errorCount / total : 0.0;
+                // Calculate actual percentages for this serve type (includes aces)
+                final totalSuccessful = inCount + aceCount;
+                final totalWithResults = totalSuccessful + errorCount;
+                final makePercentage = totalWithResults > 0
+                    ? totalSuccessful / totalWithResults
+                    : 0.0;
+                final missPercentage = totalWithResults > 0
+                    ? errorCount / totalWithResults
+                    : 0.0;
 
                 return _buildBarChartBar(
                   context,
@@ -297,14 +313,29 @@ class ServingPieChart extends StatelessWidget {
             // Makes count on the left
             SizedBox(
               width: 25,
-              child: Text(
-                inCount.toString(),
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF00FF88),
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    inCount.toString(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00FF88),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  // Show aces count below makes
+                  Text(
+                    '(${serveType == 'all' ? _getTotalAceCount() : _getAceCountForServeType(serveType)})',
+                    style: const TextStyle(
+                      fontSize: 8,
+                      color: Color(0xFFFFFF00),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 5),
@@ -504,6 +535,41 @@ class ServingPieChart extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  int _getAceCountForServeType(String serveType) {
+    final serveEvents = widget.teamEvents
+        .where((e) => e.type == EventType.serve)
+        .toList();
+
+    int aceCount = 0;
+    for (final event in serveEvents) {
+      final eventServeType = event.metadata['serveType'] as String?;
+      final result = event.metadata['result'] as String?;
+
+      if (eventServeType == serveType && result == 'ace') {
+        aceCount++;
+      }
+    }
+
+    return aceCount;
+  }
+
+  int _getTotalAceCount() {
+    final serveEvents = widget.teamEvents
+        .where((e) => e.type == EventType.serve)
+        .toList();
+
+    int totalAces = 0;
+    for (final event in serveEvents) {
+      final result = event.metadata['result'] as String?;
+
+      if (result == 'ace') {
+        totalAces++;
+      }
+    }
+
+    return totalAces;
   }
 }
 
