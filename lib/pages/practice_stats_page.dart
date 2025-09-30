@@ -105,9 +105,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     'away_4': null, 'away_5': null, 'away_6': null,
   };
 
-  // Selected zone for player assignment
-  String? _selectedZone;
-
   // Court coordinate methods
 
   bool _cacheInitialized = false;
@@ -288,100 +285,153 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                       final player = _teamPlayers[index];
                                       final isSelected =
                                           _selectedPlayer?.id == player.id;
+                                      final isOnCourt =
+                                          player.id != null &&
+                                          _isPlayerOnCourt(player.id!);
+                                      final hasPlayersOnCourt =
+                                          _hasAnyPlayersOnCourt();
+
+                                      // Determine styling based on selection and court status
+                                      Color? backgroundColor;
+                                      Color borderColor;
+                                      double opacity = 1.0;
+
+                                      if (isSelected) {
+                                        backgroundColor = const Color(
+                                          0xFF00E5FF,
+                                        ).withOpacity(0.1);
+                                        borderColor = const Color(0xFF00E5FF);
+                                      } else if (hasPlayersOnCourt &&
+                                          !isOnCourt) {
+                                        // Players not on court when others are on court
+                                        backgroundColor = null;
+                                        borderColor = Colors.grey[400]!;
+                                        opacity = 0.6;
+                                      } else if (hasPlayersOnCourt &&
+                                          isOnCourt) {
+                                        // Players on court when others are also on court
+                                        backgroundColor = null;
+                                        borderColor = Colors.grey[600]!;
+                                      } else {
+                                        backgroundColor = null;
+                                        borderColor = Colors.grey[300]!;
+                                      }
+
                                       return Container(
                                         margin: const EdgeInsets.only(
                                           bottom: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? const Color(
-                                                  0xFF00E5FF,
-                                                ).withOpacity(0.1)
-                                              : null,
+                                          color: backgroundColor,
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
                                           border: Border.all(
-                                            color: isSelected
-                                                ? const Color(0xFF00E5FF)
-                                                : Colors.grey[300]!,
+                                            color: borderColor,
                                             width: 1,
                                           ),
                                         ),
                                         child: InkWell(
                                           onTap: () {
-                                            if (_selectedZone != null) {
-                                              _onPlayerTap(player);
-                                            } else {
-                                              _selectPlayer(player);
-                                            }
+                                            // Select this player (like selecting an action)
+                                            setState(() {
+                                              _selectedPlayer = player;
+                                            });
                                           },
                                           onLongPress: () =>
                                               _showRemovePlayerModal(player),
+                                          onDoubleTap: () {
+                                            if (_selectedPlayer?.id ==
+                                                player.id) {
+                                              // Double tap selected player to clear selection
+                                              setState(() {
+                                                _selectedPlayer = null;
+                                              });
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Player selection cleared',
+                                                  ),
+                                                  duration: Duration(
+                                                    seconds: 1,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          child: Container(
-                                            width: double.infinity,
-                                            height:
-                                                36, // Fixed height for short tiles
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 2,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                // Jersey number (if available)
-                                                if (player.jerseyNumber !=
-                                                    null) ...[
-                                                  Container(
-                                                    width: 24,
-                                                    height: 24,
-                                                    decoration: BoxDecoration(
-                                                      color: isSelected
-                                                          ? const Color(
-                                                              0xFF00E5FF,
-                                                            )
-                                                          : Colors.grey[600],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        '${player.jerseyNumber}',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 12,
-                                                          fontWeight:
-                                                              FontWeight.bold,
+                                          child: Opacity(
+                                            opacity: opacity,
+                                            child: Container(
+                                              width: double.infinity,
+                                              height:
+                                                  36, // Fixed height for short tiles
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 2,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  // Jersey number (if available)
+                                                  if (player.jerseyNumber !=
+                                                      null) ...[
+                                                    Container(
+                                                      width: 24,
+                                                      height: 24,
+                                                      decoration: BoxDecoration(
+                                                        color: isSelected
+                                                            ? const Color(
+                                                                0xFF00E5FF,
+                                                              )
+                                                            : Colors.grey[600],
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          '${player.jerseyNumber}',
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                ],
-                                                // Player name
-                                                Expanded(
-                                                  child: Text(
-                                                    player.fullName,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      fontWeight: isSelected
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal,
-                                                      color: isSelected
-                                                          ? const Color(
-                                                              0xFF00E5FF,
-                                                            )
-                                                          : null,
+                                                    const SizedBox(width: 8),
+                                                  ],
+                                                  // Player name
+                                                  Expanded(
+                                                    child: Text(
+                                                      player.fullName,
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: isSelected
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                        color: isSelected
+                                                            ? const Color(
+                                                                0xFF00E5FF,
+                                                              )
+                                                            : null,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -903,9 +953,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           selectedAction: _recordingAction,
           isRecording: true, // Always allow coordinate recording
           courtZones: _courtZones,
-          onZoneTap: _onZoneLongPress,
+          onZoneTap: _onZoneTap,
+          onZoneLongPress: _onZoneLongPress,
           teamPlayers: _teamPlayers,
-          selectedZone: _selectedZone,
+          selectedZone: null, // No zone selection in unified workflow
         ),
         const SizedBox(height: 16),
         // Team Stats Table
@@ -2261,48 +2312,43 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     return stats;
   }
 
-  void _onZoneLongPress(String zoneKey) {
-    // Select this zone for player assignment
-    setState(() {
-      _selectedZone = zoneKey;
-    });
+  void _onZoneTap(String zoneKey) {
+    if (_selectedPlayer != null) {
+      // Player selected - assign to this zone
+      _assignPlayerToZone(_selectedPlayer!, zoneKey);
+    }
+    // No feedback when no player is selected - just silent
+  }
 
-    // Show feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Zone ${zoneKey.split('_')[1]} selected. Tap a player to assign.',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  void _onZoneLongPress(String zoneKey) {
+    // Clear the zone by creating a new map
+    setState(() {
+      _courtZones = Map<String, int?>.from(_courtZones);
+      _courtZones[zoneKey] = null;
+    });
   }
 
   void _onPlayerTap(Player player) {
-    if (_selectedZone != null) {
-      final zoneNumber = _selectedZone!.split('_')[1];
+    // This method is no longer used since we removed the zone-first workflow
+    // Player selection now works like action selection - select player, then tap zone or action
+  }
 
-      setState(() {
-        // Remove player from any other zone first
-        for (String key in _courtZones.keys) {
-          if (_courtZones[key] == player.id) {
-            _courtZones[key] = null;
-          }
+  void _assignPlayerToZone(Player player, String zoneKey) {
+    setState(() {
+      // Create a new map to ensure proper repainting
+      _courtZones = Map<String, int?>.from(_courtZones);
+
+      // Remove player from any other zone first
+      for (String key in _courtZones.keys) {
+        if (_courtZones[key] == player.id) {
+          _courtZones[key] = null;
         }
-        // Assign player to selected zone
-        _courtZones[_selectedZone!] = player.id;
-        // Clear selection
-        _selectedZone = null;
-      });
-
-      // Show feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${player.fullName} assigned to zone $zoneNumber'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+      }
+      // Assign player to selected zone
+      _courtZones[zoneKey] = player.id;
+      // Clear player selection
+      _selectedPlayer = null;
+    });
   }
 
   String _getPlayerZone(int playerId) {
@@ -2312,6 +2358,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       }
     }
     return 'None';
+  }
+
+  bool _isPlayerOnCourt(int playerId) {
+    return _courtZones.values.contains(playerId);
+  }
+
+  bool _hasAnyPlayersOnCourt() {
+    return _courtZones.values.any((playerId) => playerId != null);
   }
 
   Widget _buildTeamStatsTable() {
@@ -3584,6 +3638,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     setState(() {
       _isRecordingCoordinates = true;
       _recordingAction = action;
+      // Don't clear player selection - they can still be used for stats recording
       // Don't clear existing coordinates - allow recording over them
     });
   }

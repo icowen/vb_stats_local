@@ -13,6 +13,7 @@ class VolleyballCourt extends StatefulWidget {
   final bool hasStartPoint;
   final Map<String, int?>? courtZones;
   final Function(String)? onZoneTap;
+  final Function(String)? onZoneLongPress;
   final List<Player>? teamPlayers;
   final String? selectedZone;
 
@@ -29,6 +30,7 @@ class VolleyballCourt extends StatefulWidget {
     this.hasStartPoint = false,
     this.courtZones,
     this.onZoneTap,
+    this.onZoneLongPress,
     this.teamPlayers,
     this.selectedZone,
   });
@@ -61,7 +63,8 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                   GestureDetector(
                     onTapDown: (details) {
                       // Check if tap is on a zone first - if so, don't record coordinates
-                      if (widget.onZoneTap != null &&
+                      if ((widget.onZoneTap != null ||
+                              widget.onZoneLongPress != null) &&
                           widget.courtZones != null) {
                         final localPosition = details.localPosition;
                         final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
@@ -119,8 +122,8 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                         widget.onCourtTap!(x, y);
                       }
                     },
-                    onLongPressStart: (details) {
-                      // Handle zone long press for zone selection
+                    onTapUp: (details) {
+                      // Handle zone tap
                       if (widget.onZoneTap != null &&
                           widget.courtZones != null) {
                         final localPosition = details.localPosition;
@@ -160,6 +163,53 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                                 localPosition.dy >= y &&
                                 localPosition.dy <= y + zoneHeight) {
                               widget.onZoneTap!(zoneKey);
+                              return;
+                            }
+                          }
+                        }
+                      }
+                    },
+                    onLongPressStart: (details) {
+                      // Handle zone long press for clearing zones
+                      if (widget.onZoneLongPress != null &&
+                          widget.courtZones != null) {
+                        final localPosition = details.localPosition;
+                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                        final zoneWidth = 120.0; // 240/2 per side
+                        final zoneHeight = 80.0; // 240/3 rows
+
+                        // Check home side zones (left side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final zoneNum = col * 3 + row + 1;
+                            final zoneKey = 'home_$zoneNum';
+                            final x = courtOffsetX + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              widget.onZoneLongPress!(zoneKey);
+                              return;
+                            }
+                          }
+                        }
+
+                        // Check away side zones (right side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final zoneNum = col * 3 + row + 1;
+                            final zoneKey = 'away_$zoneNum';
+                            final x = courtOffsetX + 240 + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              widget.onZoneLongPress!(zoneKey);
                               return;
                             }
                           }
@@ -721,6 +771,7 @@ class VolleyballCourtPainter extends CustomPainter {
             oldDelegate.hasStartPoint != hasStartPoint ||
             oldDelegate.isRecording != isRecording ||
             oldDelegate.courtZones != courtZones ||
-            oldDelegate.selectedZone != selectedZone);
+            oldDelegate.selectedZone != selectedZone ||
+            oldDelegate.teamPlayers != teamPlayers);
   }
 }
