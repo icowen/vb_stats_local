@@ -24,7 +24,7 @@ class PracticeStatsProvider extends ChangeNotifier {
   String? _error;
 
   // Cache
-  Map<int, List<Event>> _playerEventsCache = {};
+  final Map<int, List<Event>> _playerEventsCache = {};
   bool _cacheInitialized = false;
 
   // Getters
@@ -57,7 +57,7 @@ class PracticeStatsProvider extends ChangeNotifier {
   Future<void> _loadAllData() async {
     if (_practice?.id == null) return;
 
-    final futures = await Future.wait([_loadPlayers(), _loadEvents()]);
+    await Future.wait([_loadPlayers(), _loadEvents()]);
 
     // Initialize cache after loading
     await _initializeCache();
@@ -288,11 +288,5 @@ class PracticeStatsProvider extends ChangeNotifier {
   void _clearError() {
     _error = null;
     notifyListeners();
-  }
-
-  // Dispose
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

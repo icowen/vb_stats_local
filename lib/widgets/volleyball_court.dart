@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/player.dart';
+import '../utils/app_colors.dart';
 import '../providers/player_selection_provider.dart';
 
 class VolleyballCourt extends StatefulWidget {
@@ -44,300 +45,297 @@ class VolleyballCourt extends StatefulWidget {
 class _VolleyballCourtState extends State<VolleyballCourt> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: widget.isRecording
-                    ? const Color(0xFF00FF88)
-                    : const Color(0xFF00E5FF),
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: widget.isRecording
+                  ? AppColors.secondary
+                  : AppColors.primary,
+              width: 2,
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Stack(
-                children: [
-                  GestureDetector(
-                    onTapDown: (details) {
-                      // Check if tap is on a zone first, but only handle zone assignment
-                      // when we're specifically trying to assign a player to a zone
-                      // (i.e., when only a player is selected and no action is selected)
-                      final selectionProvider = context
-                          .read<PlayerSelectionProvider>();
-                      final selectedPlayer = selectionProvider.selectedPlayer;
-                      final selectedActionType =
-                          selectionProvider.selectedActionType;
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTapDown: (details) {
+                    // Check if tap is on a zone first, but only handle zone assignment
+                    // when we're specifically trying to assign a player to a zone
+                    // (i.e., when only a player is selected and no action is selected)
+                    final selectionProvider = context
+                        .read<PlayerSelectionProvider>();
+                    final selectedPlayer = selectionProvider.selectedPlayer;
+                    final selectedActionType =
+                        selectionProvider.selectedActionType;
 
-                      // Only handle zone assignment when only a player is selected (no action)
-                      final shouldHandleZoneAssignment =
-                          selectedPlayer != null && selectedActionType == null;
+                    // Only handle zone assignment when only a player is selected (no action)
+                    final shouldHandleZoneAssignment =
+                        selectedPlayer != null && selectedActionType == null;
 
-                      if (shouldHandleZoneAssignment &&
-                          (widget.onZoneTap != null ||
-                              widget.onZoneLongPress != null) &&
-                          widget.courtZones != null) {
-                        final localPosition = details.localPosition;
-                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
-                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
-                        final zoneWidth = 120.0; // 240/2 per side
-                        final zoneHeight = 80.0; // 240/3 rows
+                    if (shouldHandleZoneAssignment &&
+                        (widget.onZoneTap != null ||
+                            widget.onZoneLongPress != null) &&
+                        widget.courtZones != null) {
+                      final localPosition = details.localPosition;
+                      final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                      final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                      final zoneWidth = 120.0; // 240/2 per side
+                      final zoneHeight = 80.0; // 240/3 rows
 
-                        // Check home side zones (left side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final x = courtOffsetX + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
+                      // Check home side zones (left side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final x = courtOffsetX + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
 
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
-                              final zoneKey = 'home_${col + row * 2 + 1}';
-                              if (widget.onZoneTap != null) {
-                                widget.onZoneTap!(zoneKey);
-                              }
-                              return; // Handle zone assignment - don't record coordinates
-                            }
-                          }
-                        }
-
-                        // Check away side zones (right side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final x = courtOffsetX + 240 + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
-
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
-                              final zoneKey = 'away_${col + row * 2 + 1}';
-                              if (widget.onZoneTap != null) {
-                                widget.onZoneTap!(zoneKey);
-                              }
-                              return; // Handle zone assignment - don't record coordinates
-                            }
-                          }
-                        }
-                      }
-
-                      // Handle court tap - always call onCourtTap if it exists
-                      // The onCourtTap method will decide what to do based on current state
-                      if (widget.onCourtTap != null) {
-                        // Use the GestureDetector's local position directly
-                        final localPosition = details.localPosition;
-
-                        // Convert to normalized coordinates (0-1) within the court
-                        // Use the same offset calculation as the painter
-                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
-                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
-                        final x =
-                            (localPosition.dx - courtOffsetX) /
-                            480.0; // 0-1 normalized
-                        final y =
-                            (localPosition.dy - courtOffsetY) /
-                            240.0; // 0-1 normalized
-
-                        widget.onCourtTap!(x, y);
-                      }
-                    },
-                    onTapUp: (details) {
-                      // Handle zone tap
-                      if (widget.onZoneTap != null &&
-                          widget.courtZones != null) {
-                        final localPosition = details.localPosition;
-                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
-                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
-                        final zoneWidth = 120.0; // 240/2 per side
-                        final zoneHeight = 80.0; // 240/3 rows
-
-                        // Check home side zones (left side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final zoneNum = col * 3 + row + 1;
-                            final zoneKey = 'home_$zoneNum';
-                            final x = courtOffsetX + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
-
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            final zoneKey = 'home_${col + row * 2 + 1}';
+                            if (widget.onZoneTap != null) {
                               widget.onZoneTap!(zoneKey);
-                              return;
                             }
+                            return; // Handle zone assignment - don't record coordinates
                           }
                         }
+                      }
 
-                        // Check away side zones (right side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final zoneNum = col * 3 + row + 1;
-                            final zoneKey = 'away_$zoneNum';
-                            final x = courtOffsetX + 240 + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
+                      // Check away side zones (right side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final x = courtOffsetX + 240 + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
 
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            final zoneKey = 'away_${col + row * 2 + 1}';
+                            if (widget.onZoneTap != null) {
                               widget.onZoneTap!(zoneKey);
-                              return;
                             }
+                            return; // Handle zone assignment - don't record coordinates
                           }
                         }
                       }
-                    },
-                    onLongPressStart: (details) {
-                      // Handle zone long press for clearing zones
-                      if (widget.onZoneLongPress != null &&
-                          widget.courtZones != null) {
-                        final localPosition = details.localPosition;
-                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
-                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
-                        final zoneWidth = 120.0; // 240/2 per side
-                        final zoneHeight = 80.0; // 240/3 rows
+                    }
 
-                        // Check home side zones (left side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final zoneNum = col * 3 + row + 1;
-                            final zoneKey = 'home_$zoneNum';
-                            final x = courtOffsetX + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
+                    // Handle court tap - always call onCourtTap if it exists
+                    // The onCourtTap method will decide what to do based on current state
+                    if (widget.onCourtTap != null) {
+                      // Use the GestureDetector's local position directly
+                      final localPosition = details.localPosition;
 
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
-                              widget.onZoneLongPress!(zoneKey);
-                              return;
-                            }
-                          }
-                        }
+                      // Convert to normalized coordinates (0-1) within the court
+                      // Use the same offset calculation as the painter
+                      final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                      final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                      final x =
+                          (localPosition.dx - courtOffsetX) /
+                          480.0; // 0-1 normalized
+                      final y =
+                          (localPosition.dy - courtOffsetY) /
+                          240.0; // 0-1 normalized
 
-                        // Check away side zones (right side)
-                        for (int col = 0; col < 2; col++) {
-                          for (int row = 0; row < 3; row++) {
-                            final zoneNum = col * 3 + row + 1;
-                            final zoneKey = 'away_$zoneNum';
-                            final x = courtOffsetX + 240 + col * zoneWidth;
-                            final y = courtOffsetY + row * zoneHeight;
+                      widget.onCourtTap!(x, y);
+                    }
+                  },
+                  onTapUp: (details) {
+                    // Handle zone tap
+                    if (widget.onZoneTap != null && widget.courtZones != null) {
+                      final localPosition = details.localPosition;
+                      final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                      final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                      final zoneWidth = 120.0; // 240/2 per side
+                      final zoneHeight = 80.0; // 240/3 rows
 
-                            if (localPosition.dx >= x &&
-                                localPosition.dx <= x + zoneWidth &&
-                                localPosition.dy >= y &&
-                                localPosition.dy <= y + zoneHeight) {
-                              widget.onZoneLongPress!(zoneKey);
-                              return;
-                            }
+                      // Check home side zones (left side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final zoneNum = col * 3 + row + 1;
+                          final zoneKey = 'home_$zoneNum';
+                          final x = courtOffsetX + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
+
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            widget.onZoneTap!(zoneKey);
+                            return;
                           }
                         }
                       }
-                    },
-                    child: CustomPaint(
-                      size: const Size(
-                        660,
-                        330,
-                      ), // Horizontal court with 330x330 square halves
-                      painter: VolleyballCourtPainter(
-                        startX: widget.startX,
-                        startY: widget.startY,
-                        endX: widget.endX,
-                        endY: widget.endY,
-                        hasStartPoint: widget.hasStartPoint,
-                        isRecording: widget.isRecording,
-                        courtZones: widget.courtZones,
-                        teamPlayers: widget.teamPlayers,
-                        selectedZone: widget.selectedZone,
-                      ),
+
+                      // Check away side zones (right side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final zoneNum = col * 3 + row + 1;
+                          final zoneKey = 'away_$zoneNum';
+                          final x = courtOffsetX + 240 + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
+
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            widget.onZoneTap!(zoneKey);
+                            return;
+                          }
+                        }
+                      }
+                    }
+                  },
+                  onLongPressStart: (details) {
+                    // Handle zone long press for clearing zones
+                    if (widget.onZoneLongPress != null &&
+                        widget.courtZones != null) {
+                      final localPosition = details.localPosition;
+                      final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                      final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                      final zoneWidth = 120.0; // 240/2 per side
+                      final zoneHeight = 80.0; // 240/3 rows
+
+                      // Check home side zones (left side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final zoneNum = col * 3 + row + 1;
+                          final zoneKey = 'home_$zoneNum';
+                          final x = courtOffsetX + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
+
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            widget.onZoneLongPress!(zoneKey);
+                            return;
+                          }
+                        }
+                      }
+
+                      // Check away side zones (right side)
+                      for (int col = 0; col < 2; col++) {
+                        for (int row = 0; row < 3; row++) {
+                          final zoneNum = col * 3 + row + 1;
+                          final zoneKey = 'away_$zoneNum';
+                          final x = courtOffsetX + 240 + col * zoneWidth;
+                          final y = courtOffsetY + row * zoneHeight;
+
+                          if (localPosition.dx >= x &&
+                              localPosition.dx <= x + zoneWidth &&
+                              localPosition.dy >= y &&
+                              localPosition.dy <= y + zoneHeight) {
+                            widget.onZoneLongPress!(zoneKey);
+                            return;
+                          }
+                        }
+                      }
+                    }
+                  },
+                  child: CustomPaint(
+                    size: const Size(
+                      660,
+                      330,
+                    ), // Horizontal court with 330x330 square halves
+                    painter: VolleyballCourtPainter(
+                      startX: widget.startX,
+                      startY: widget.startY,
+                      endX: widget.endX,
+                      endY: widget.endY,
+                      hasStartPoint: widget.hasStartPoint,
+                      isRecording: widget.isRecording,
+                      courtZones: widget.courtZones,
+                      teamPlayers: widget.teamPlayers,
+                      selectedZone: widget.selectedZone,
                     ),
                   ),
-                  // Clear button in top left
-                  if (widget.isRecording &&
-                      (widget.hasStartPoint || widget.endX != null))
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: GestureDetector(
-                        onTap: widget.onClear,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.red, width: 1),
-                          ),
-                          child: const Text(
-                            'Clear',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Coordinates overlay in top right
-                  if (widget.hasStartPoint || widget.endX != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
+                ),
+                // Clear button in top left
+                if (widget.isRecording &&
+                    (widget.hasStartPoint || widget.endX != null))
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: GestureDetector(
+                      onTap: widget.onClear,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.red.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF00FF88),
-                            width: 1,
-                          ),
+                          border: Border.all(color: Colors.red, width: 1),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.hasStartPoint)
-                              Text(
-                                'Start: (${((widget.startX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.startY ?? 0) * 30).toStringAsFixed(1)}ft)',
-                                style: const TextStyle(
-                                  color: Color(0xFF00FF88),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            if (widget.hasStartPoint && widget.endX != null)
-                              const SizedBox(width: 8),
-                            if (widget.endX != null)
-                              Text(
-                                'End: (${((widget.endX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.endY ?? 0) * 30).toStringAsFixed(1)}ft)',
-                                style: const TextStyle(
-                                  color: Color(0xFF00E5FF),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                              ),
-                          ],
+                        child: const Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+                // Coordinates overlay in top right
+                if (widget.hasStartPoint || widget.endX != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppColors.secondary,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.hasStartPoint)
+                            Text(
+                              'Start: (${((widget.startX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.startY ?? 0) * 30).toStringAsFixed(1)}ft)',
+                              style: const TextStyle(
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          if (widget.hasStartPoint && widget.endX != null)
+                            const SizedBox(width: 8),
+                          if (widget.endX != null)
+                            Text(
+                              'End: (${((widget.endX ?? 0) * 60).toStringAsFixed(1)}ft, ${((widget.endY ?? 0) * 30).toStringAsFixed(1)}ft)',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -368,21 +366,21 @@ class VolleyballCourtPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final outerPaint = Paint()
-      ..color = const Color(0xFF2D2D2D)
+      ..color = AppColors.courtBackground
       ..style = PaintingStyle.fill;
 
     final outerLinePaint = Paint()
-      ..color = const Color(0xFF00E5FF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
     final courtLinePaint = Paint()
-      ..color = const Color(0xFF00E5FF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     final netPaint = Paint()
-      ..color = const Color(0xFF9C27B0)
+      ..color = AppColors.blockColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 
@@ -416,7 +414,7 @@ class VolleyballCourtPainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(courtOffsetX, courtOffsetY, courtSize, courtHeight),
       Paint()
-        ..color = const Color(0xFF1A1A1A)
+        ..color = AppColors.courtInnerBackground
         ..style = PaintingStyle.fill,
     );
 
@@ -455,7 +453,7 @@ class VolleyballCourtPainter extends CustomPainter {
     // Draw 10-foot attack lines (1/3 of the way from net to endline)
     // Each half is 240 pixels = 30 feet, so 10 feet = 80 pixels
     final attackLinePaint = Paint()
-      ..color = const Color(0xFF666666)
+      ..color = AppColors.tenFootLineColor
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -491,7 +489,7 @@ class VolleyballCourtPainter extends CustomPainter {
           Offset(startXPos, startYPos),
           8,
           Paint()
-            ..color = const Color(0xFF00FF88)
+            ..color = AppColors.secondary
             ..style = PaintingStyle.fill,
         );
 
@@ -499,7 +497,7 @@ class VolleyballCourtPainter extends CustomPainter {
           Offset(startXPos, startYPos),
           12,
           Paint()
-            ..color = const Color(0xFF00FF88)
+            ..color = AppColors.secondary
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3,
         );
@@ -519,7 +517,7 @@ class VolleyballCourtPainter extends CustomPainter {
           Offset(endXPos, endYPos),
           8,
           Paint()
-            ..color = const Color(0xFF00E5FF)
+            ..color = AppColors.primary
             ..style = PaintingStyle.fill,
         );
 
@@ -527,7 +525,7 @@ class VolleyballCourtPainter extends CustomPainter {
           Offset(endXPos, endYPos),
           12,
           Paint()
-            ..color = const Color(0xFF00E5FF)
+            ..color = AppColors.primary
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3,
         );
@@ -553,7 +551,7 @@ class VolleyballCourtPainter extends CustomPainter {
             Offset(startXPos, startYPos),
             Offset(endXPos, endYPos),
             Paint()
-              ..color = const Color(0xFFFFFFFF)
+              ..color = AppColors.pureWhite
               ..strokeWidth = 2
               ..style = PaintingStyle.stroke,
           );
@@ -579,7 +577,7 @@ class VolleyballCourtPainter extends CustomPainter {
 
     // Zone border paint - only for internal boundaries
     final zoneBorderPaint = Paint()
-      ..color = const Color(0xFFFFD700)
+      ..color = AppColors.gold
       ..strokeWidth = 0.5
       ..style = PaintingStyle.stroke;
 
@@ -596,7 +594,7 @@ class VolleyballCourtPainter extends CustomPainter {
           canvas.drawRect(
             Rect.fromLTWH(x, y, zoneWidth, zoneHeight),
             Paint()
-              ..color = const Color(0xFFFFD700).withOpacity(0.2)
+              ..color = AppColors.gold.withValues(alpha: 0.2)
               ..style = PaintingStyle.fill,
           );
         }
@@ -632,7 +630,7 @@ class VolleyballCourtPainter extends CustomPainter {
             Offset(x + zoneWidth / 2, y + zoneHeight / 2),
             12,
             Paint()
-              ..color = const Color(0xFFFFD700)
+              ..color = AppColors.gold
               ..style = PaintingStyle.fill,
           );
 
@@ -662,7 +660,7 @@ class VolleyballCourtPainter extends CustomPainter {
           final textSpan = TextSpan(
             text: '$zoneNum',
             style: const TextStyle(
-              color: Color(0xFFFFD700),
+              color: AppColors.gold,
               fontSize: 16,
               fontWeight: FontWeight.normal,
             ),
@@ -697,7 +695,7 @@ class VolleyballCourtPainter extends CustomPainter {
           canvas.drawRect(
             Rect.fromLTWH(x, y, zoneWidth, zoneHeight),
             Paint()
-              ..color = const Color(0xFFFFD700).withOpacity(0.2)
+              ..color = AppColors.gold.withValues(alpha: 0.2)
               ..style = PaintingStyle.fill,
           );
         }
@@ -733,7 +731,7 @@ class VolleyballCourtPainter extends CustomPainter {
             Offset(x + zoneWidth / 2, y + zoneHeight / 2),
             12,
             Paint()
-              ..color = const Color(0xFFFFD700)
+              ..color = AppColors.gold
               ..style = PaintingStyle.fill,
           );
 
@@ -763,7 +761,7 @@ class VolleyballCourtPainter extends CustomPainter {
           final textSpan = TextSpan(
             text: '$zoneNum',
             style: const TextStyle(
-              color: Color(0xFFFFD700),
+              color: AppColors.gold,
               fontSize: 16,
               fontWeight: FontWeight.normal,
             ),

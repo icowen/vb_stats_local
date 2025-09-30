@@ -11,6 +11,7 @@ import 'models/match.dart';
 import 'models/practice.dart';
 import 'pages/practice_stats_page.dart';
 import 'utils/date_utils.dart';
+import 'utils/app_colors.dart';
 import 'providers/practice_stats_provider.dart';
 import 'providers/player_selection_provider.dart';
 import 'providers/event_provider.dart';
@@ -35,21 +36,19 @@ class MyApp extends StatelessWidget {
         title: 'Flutter Demo',
         theme: ThemeData.dark().copyWith(
           colorScheme: ColorScheme.dark(
-            primary: const Color(0xFF00E5FF), // Neon light blue
-            secondary: const Color(0xFF00FF88), // Neon light green
-            surface: const Color(0xFF121212),
-            background: const Color(0xFF000000),
+            primary: AppColors.primary,
+            secondary: AppColors.secondary,
+            surface: AppColors.surface,
             onPrimary: Colors.black,
             onSecondary: Colors.black,
             onSurface: Colors.white,
-            onBackground: Colors.white,
           ),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1E1E1E),
+            backgroundColor: AppColors.appBarBackground,
             foregroundColor: Colors.white,
           ),
           cardTheme: const CardThemeData(
-            color: Color(0xFF1E1E1E),
+            color: AppColors.appBarBackground,
             elevation: 8,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -57,7 +56,7 @@ class MyApp extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -65,20 +64,20 @@ class MyApp extends StatelessWidget {
             ),
           ),
           textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF00E5FF),
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
           ),
           inputDecorationTheme: const InputDecorationTheme(
             border: OutlineInputBorder(),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF00E5FF), width: 2),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
             ),
-            labelStyle: TextStyle(color: Color(0xFF00E5FF)),
+            labelStyle: TextStyle(color: AppColors.primary),
           ),
           dropdownMenuTheme: DropdownMenuThemeData(
             menuStyle: MenuStyle(
-              backgroundColor: WidgetStateProperty.all(const Color(0xFF1E1E1E)),
+              backgroundColor: WidgetStateProperty.all(
+                AppColors.appBarBackground,
+              ),
             ),
           ),
         ),
@@ -180,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : Padding(
               padding: const EdgeInsets.all(16.0),
@@ -195,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: _buildTile(
                             'Players',
                             Icons.people,
-                            Color(0xFF00E5FF),
+                            AppColors.primary,
                             _players.length,
                             () => _toggleExpanded('players'),
                             () => _showCreatePlayerModal(context),
@@ -206,7 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: _buildTile(
                             'Teams',
                             Icons.groups,
-                            Color(0xFF00FF88),
+                            AppColors.secondary,
                             _teams.length,
                             () => _toggleExpanded('teams'),
                             () => _showCreateTeamModal(context),
@@ -217,7 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: _buildTile(
                             'Matches',
                             Icons.sports_volleyball,
-                            Color(0xFF00E5FF),
+                            AppColors.primary,
                             _matches.length,
                             () => _toggleExpanded('matches'),
                             () => _showCreateMatchModal(context),
@@ -228,7 +227,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: _buildTile(
                             'Practices',
                             Icons.fitness_center,
-                            Color(0xFF00FF88),
+                            AppColors.secondary,
                             _practices.length,
                             () => _toggleExpanded('practices'),
                             () => _showCreatePracticeModal(context),
@@ -262,7 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
   ) {
     final isSelected = _expandedTile == title.toLowerCase();
     return Card(
-      color: isSelected ? color.withOpacity(0.1) : null,
+      color: isSelected ? color.withValues(alpha: 0.1) : null,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -301,7 +300,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Icon(Icons.add, size: 16, color: color),
@@ -348,7 +347,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: ListTile(
                         leading: const Icon(
                           Icons.person,
-                          color: Color(0xFF00E5FF),
+                          color: AppColors.primary,
                         ),
                         title: Text(player.fullName),
                         subtitle: Text(player.jerseyDisplay),
@@ -387,7 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: ListTile(
                         leading: const Icon(
                           Icons.groups,
-                          color: Color(0xFF00FF88),
+                          color: AppColors.secondary,
                         ),
                         title: Text(team.teamName),
                         subtitle: Text('${team.clubName} - Age ${team.age}'),
@@ -425,7 +424,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: ListTile(
                         leading: const Icon(
                           Icons.sports_volleyball,
-                          color: Color(0xFF00E5FF),
+                          color: AppColors.primary,
                         ),
                         title: Text(match.matchTitle),
                         subtitle: Text(
@@ -471,7 +470,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: ListTile(
                           leading: const Icon(
                             Icons.fitness_center,
-                            color: Color(0xFF00FF88),
+                            color: AppColors.secondary,
                           ),
                           title: Text(practice.practiceTitle),
                           subtitle: Text(
@@ -495,7 +494,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _showPracticeOptions(BuildContext context, Practice practice) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2D2D2D),
+      backgroundColor: AppColors.courtBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -542,7 +541,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00E5FF),
+                        backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -560,7 +559,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF4444),
+                        backgroundColor: AppColors.redError,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -584,7 +583,7 @@ class _MyHomePageState extends State<MyHomePage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF2D2D2D),
+              backgroundColor: AppColors.courtBackground,
               title: const Text(
                 'Edit Practice',
                 style: TextStyle(color: Colors.white),
@@ -603,7 +602,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         const Icon(
                           Icons.info_outline,
-                          color: Color(0xFF00E5FF),
+                          color: AppColors.primary,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -632,7 +631,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           return Theme(
                             data: Theme.of(context).copyWith(
                               colorScheme: const ColorScheme.dark(
-                                primary: Color(0xFF00E5FF),
+                                primary: AppColors.primary,
                                 onPrimary: Colors.white,
                                 surface: Color(0xFF2D2D2D),
                                 onSurface: Colors.white,
@@ -658,7 +657,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: [
                           const Icon(
                             Icons.calendar_today,
-                            color: Color(0xFF00E5FF),
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -699,7 +698,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ScaffoldMessenger.of(mainContext).showSnackBar(
                           const SnackBar(
                             content: Text('Practice date updated successfully'),
-                            backgroundColor: Color(0xFF00FF88),
+                            backgroundColor: AppColors.secondary,
                           ),
                         );
                       }
@@ -709,7 +708,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ScaffoldMessenger.of(mainContext).showSnackBar(
                           SnackBar(
                             content: Text('Error updating practice: $e'),
-                            backgroundColor: const Color(0xFFFF4444),
+                            backgroundColor: AppColors.redError,
                           ),
                         );
                       }
@@ -717,7 +716,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   child: const Text(
                     'Save',
-                    style: TextStyle(color: Color(0xFF00E5FF)),
+                    style: TextStyle(color: AppColors.primary),
                   ),
                 ),
               ],
@@ -733,7 +732,7 @@ class _MyHomePageState extends State<MyHomePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2D2D2D),
+          backgroundColor: AppColors.courtBackground,
           title: const Text(
             'Delete Practice',
             style: TextStyle(color: Colors.white),
@@ -761,7 +760,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ScaffoldMessenger.of(mainContext).showSnackBar(
                       const SnackBar(
                         content: Text('Practice deleted successfully'),
-                        backgroundColor: Color(0xFF00FF88),
+                        backgroundColor: AppColors.secondary,
                       ),
                     );
                   }
@@ -771,7 +770,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ScaffoldMessenger.of(mainContext).showSnackBar(
                       SnackBar(
                         content: Text('Error deleting practice: $e'),
-                        backgroundColor: const Color(0xFFFF4444),
+                        backgroundColor: AppColors.redError,
                       ),
                     );
                   }
@@ -779,7 +778,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               child: const Text(
                 'Delete',
-                style: TextStyle(color: Color(0xFFFF4444)),
+                style: TextStyle(color: AppColors.redError),
               ),
             ),
           ],
@@ -833,7 +832,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<Team>(
-                      value: selectedTeam,
+                      initialValue: selectedTeam,
                       decoration: const InputDecoration(
                         labelText: 'Team (Optional)',
                         border: OutlineInputBorder(),
@@ -874,7 +873,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                       await _playerService.insertPlayer(player);
                       _loadData();
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   },
                   child: const Text('Create'),
@@ -947,7 +948,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                   await _teamService.insertTeam(team);
                   _loadData();
-                  Navigator.of(context).pop();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 }
               },
               child: const Text('Create'),
@@ -976,7 +979,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<Team>(
-                      value: selectedHomeTeam,
+                      initialValue: selectedHomeTeam,
                       decoration: const InputDecoration(
                         labelText: 'Home Team',
                         border: OutlineInputBorder(),
@@ -995,7 +998,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<Team>(
-                      value: selectedAwayTeam,
+                      initialValue: selectedAwayTeam,
                       decoration: const InputDecoration(
                         labelText: 'Away Team',
                         border: OutlineInputBorder(),
@@ -1082,7 +1085,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                       await _matchService.insertMatch(match);
                       _loadData();
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   },
                   child: const Text('Create'),
@@ -1113,7 +1118,9 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () async {
                 await _dbHelper.resetDatabase();
                 _loadData();
-                Navigator.of(context).pop();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -1143,7 +1150,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<Team>(
-                      value: selectedTeam,
+                      initialValue: selectedTeam,
                       decoration: const InputDecoration(
                         labelText: 'Team',
                         border: OutlineInputBorder(),
@@ -1223,7 +1230,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       print('Finished adding players to practice');
 
                       _loadData();
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
 
                       // Navigate to practice stats page
                       final createdPractice = Practice(
@@ -1231,12 +1240,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         team: selectedTeam!,
                         date: selectedDate,
                       );
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              PracticeCollectionPage(practice: createdPractice),
-                        ),
-                      );
+                      if (context.mounted) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PracticeCollectionPage(
+                              practice: createdPractice,
+                            ),
+                          ),
+                        );
+                      }
                     }
                   },
                   child: const Text('Create'),
@@ -1300,7 +1312,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<Team>(
-                      value: selectedTeam,
+                      initialValue: selectedTeam,
                       decoration: const InputDecoration(
                         labelText: 'Team (Optional)',
                         border: OutlineInputBorder(),
@@ -1348,7 +1360,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                       await _playerService.updatePlayer(updatedPlayer);
                       _loadData();
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   },
                   child: const Text('Update'),
@@ -1463,7 +1477,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: ListTile(
                                   leading: const Icon(
                                     Icons.person,
-                                    color: Color(0xFF00E5FF),
+                                    color: AppColors.primary,
                                   ),
                                   title: Text(player.fullName),
                                   subtitle: Text(player.jerseyDisplay),
@@ -1514,7 +1528,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       );
                       await _teamService.updateTeam(updatedTeam);
                       _loadData();
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                     }
                   },
                   child: const Text('Update Team'),
@@ -1598,7 +1614,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                       )
                                     : const Icon(
                                         Icons.person,
-                                        color: Color(0xFF00E5FF),
+                                        color: AppColors.primary,
                                       ),
                                 enabled: !isAlreadyOnTeam,
                               ),
@@ -1613,7 +1629,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           '${selectedPlayerIds.length} player(s) selected',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF00E5FF),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -1645,7 +1661,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           }
                           _loadData(); // Refresh main data
                           setState(() {}); // Refresh modal state
-                          Navigator.of(context).pop();
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                          }
                         },
                   child: Text(
                     selectedPlayerIds.isEmpty

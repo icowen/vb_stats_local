@@ -196,8 +196,7 @@ class S3Service {
           .replaceAll(' ', '_')
           .toLowerCase();
 
-      final s3Key =
-          'practice/analysis/${sanitizedPracticeName}_${timestamp}.pdf';
+      final s3Key = 'practice/analysis/${sanitizedPracticeName}_$timestamp.pdf';
 
       // Read file bytes
       final fileBytes = await pdfFile.readAsBytes();

@@ -12,6 +12,7 @@ import 'practice_analysis_page.dart';
 import '../viz/player_stats_table.dart';
 import '../widgets/volleyball_court.dart';
 import '../utils/date_utils.dart';
+import '../utils/app_colors.dart';
 import '../providers/player_selection_provider.dart';
 import '../providers/event_provider.dart';
 
@@ -52,7 +53,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   List<Event> _playerEvents = [];
 
   // Court coordinate tracking
-  bool _isRecordingCoordinates = false;
   String? _recordingAction;
   double? _startX;
   double? _startY;
@@ -67,16 +67,14 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   double? _displayEndY;
 
   // Action selection for iterative stats
-  String? _selectedActionType; // 'serve', 'pass', 'attack'
   String? _selectedServeResult; // 'ace', 'in', 'error'
   String? _selectedPassRating; // 'ace', '3', '2', '1', '0'
   String? _selectedAttackResult; // 'kill', 'in', 'error'
   List<Event> _teamEvents = [];
   String? _selectedServeType;
-  bool _isLoadingPlayerStats = false;
 
   // Attack metadata selection (multiple selection)
-  Set<String> _selectedAttackMetadata = {};
+  final Set<String> _selectedAttackMetadata = {};
 
   // Pass type selection (single selection)
   String? _selectedPassType;
@@ -95,7 +93,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   String? _selectedSetType; // 'in_system' or 'out_of_system'
 
   // Caching system
-  Map<int, List<Event>> _playerEventsCache = {};
+  final Map<int, List<Event>> _playerEventsCache = {};
 
   // Court zones - 6 zones per side (2 columns × 3 rows)
   // Each side has zones 1-6 in a 2×3 grid
@@ -113,8 +111,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   bool _cacheInitialized = false;
 
   // Undo/Redo system
-  List<UndoAction> _undoStack = [];
-  List<UndoAction> _redoStack = [];
+  final List<UndoAction> _undoStack = [];
+  final List<UndoAction> _redoStack = [];
 
   static const int maxUndoActions = 20;
 
@@ -136,49 +134,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _teamEvents = [];
         _isLoading = false;
       });
-    }
-  }
-
-  // FutureBuilder-compatible method for initial data loading
-  Future<Map<String, dynamic>> _loadInitialData() async {
-    try {
-      // Ensure database tables exist
-      await _dbHelper.ensureTablesExist();
-
-      // Load all initial data in parallel
-      final results = await Future.wait([
-        _playerService.getPracticePlayers(widget.practice.id!),
-        _playerService.getAllPlayers(),
-        _eventService.getEventsForPractice(widget.practice.id!),
-      ]);
-
-      final practicePlayers = results[0] as List<Player>;
-      final allPlayers = results[1] as List<Player>;
-      final teamEvents = results[2] as List<Event>;
-
-      print(
-        'Practice ${widget.practice.id} has ${practicePlayers.length} players',
-      );
-      for (final player in practicePlayers) {
-        print('  - ${player.fullName} (ID: ${player.id})');
-      }
-
-      return {
-        'teamPlayers': _sortPlayers(practicePlayers),
-        'allPlayers': allPlayers,
-        'teamEvents': teamEvents,
-        'success': true,
-        'error': null,
-      };
-    } catch (e) {
-      print('Error loading initial data: $e');
-      return {
-        'teamPlayers': <Player>[],
-        'allPlayers': <Player>[],
-        'teamEvents': <Event>[],
-        'success': false,
-        'error': e.toString(),
-      };
     }
   }
 
@@ -240,7 +195,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : SafeArea(
               child: Row(
@@ -253,7 +208,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         color: Theme.of(context).cardColor,
                         border: Border(
                           right: BorderSide(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -277,7 +232,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                       style: TextStyle(fontSize: 12),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF00E5FF),
+                                      backgroundColor: AppColors.primary,
                                       foregroundColor: Colors.black,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 6,
@@ -296,7 +251,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                       style: TextStyle(fontSize: 12),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF00FF88),
+                                      backgroundColor: AppColors.secondary,
                                       foregroundColor: Colors.black,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 6,
@@ -345,8 +300,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                       if (isSelected) {
                                         backgroundColor = const Color(
                                           0xFF00E5FF,
-                                        ).withOpacity(0.1);
-                                        borderColor = const Color(0xFF00E5FF);
+                                        ).withValues(alpha: 0.1);
+                                        borderColor = AppColors.primary;
                                       } else if (hasPlayersOnCourt &&
                                           !isOnCourt) {
                                         // Players not on court when others are on court
@@ -497,7 +452,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         color: Theme.of(context).cardColor,
                         border: Border(
                           right: BorderSide(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -582,92 +537,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
-  // FutureBuilder-compatible method for player cache initialization
-  Future<Map<int, List<Event>>> _initializePlayerCacheFuture(
-    List<Player> teamPlayers,
-  ) async {
-    if (_cacheInitialized) return _playerEventsCache;
-
-    final Map<int, List<Event>> cache = {};
-
-    try {
-      // Load events for all players in parallel
-      final futures = teamPlayers
-          .where((player) => player.id != null)
-          .map((player) => _eventService.getEventsForPlayer(player.id!));
-
-      final results = await Future.wait(futures);
-
-      int index = 0;
-      for (final player in teamPlayers.where((p) => p.id != null)) {
-        cache[player.id!] = results[index];
-        index++;
-      }
-
-      _playerEventsCache.addAll(cache);
-      _cacheInitialized = true;
-      print('Player cache initialized for ${teamPlayers.length} players');
-
-      return cache;
-    } catch (e) {
-      print('Error initializing player cache: $e');
-      return {};
-    }
-  }
-
-  void _selectPlayer(Player player) async {
-    if (_selectedPlayer?.id == player.id) {
-      // If clicking the same player, unselect them
-      setState(() {
-        _selectedPlayer = null;
-        _playerEvents = [];
-        _selectedServeType = null; // Clear serve type selection
-        _selectedActionType = null; // Clear action type selection
-        _selectedServeResult = null; // Clear serve result selection
-        _selectedPassRating = null; // Clear pass rating selection
-        _selectedPassType = null; // Clear pass type selection
-        _selectedAttackResult = null; // Clear attack result selection
-        _selectedAttackMetadata.clear(); // Clear attack metadata
-        _selectedFreeballAction = null; // Clear freeball action selection
-        _selectedFreeballResult = null; // Clear freeball result selection
-        _selectedBlockingType = null; // Clear blocking type selection
-        _selectedDigType = null; // Clear dig type selection
-        _selectedSetType = null; // Clear set type selection
-        // Keep coordinates when unselecting player
-        _isLoadingPlayerStats = false;
-      });
-    } else {
-      // Select the new player
-      setState(() {
-        _selectedPlayer = player;
-        _selectedServeType = null; // Clear serve type selection
-        _selectedActionType = null; // Clear action type selection
-        _selectedServeResult = null; // Clear serve result selection
-        _selectedPassRating = null; // Clear pass rating selection
-        _selectedPassType = null; // Clear pass type selection
-        _selectedAttackResult = null; // Clear attack result selection
-        _selectedAttackMetadata.clear(); // Clear attack metadata
-        _selectedFreeballAction = null; // Clear freeball action selection
-        _selectedFreeballResult = null; // Clear freeball result selection
-        // Keep coordinates when selecting new player
-        _isLoadingPlayerStats = true;
-      });
-
-      // Use cache if available, otherwise load from database
-      if (player.id != null && _playerEventsCache.containsKey(player.id!)) {
-        _playerEvents = _playerEventsCache[player.id!]!;
-        setState(() {
-          _isLoadingPlayerStats = false;
-        });
-      } else {
-        await _loadPlayerEvents();
-        setState(() {
-          _isLoadingPlayerStats = false;
-        });
-      }
-    }
-  }
-
   Future<void> _loadPlayerEvents() async {
     if (_selectedPlayer == null) return;
 
@@ -684,26 +553,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     } catch (e) {
       print('Error loading player events: $e');
       _playerEvents = [];
-    }
-  }
-
-  // FutureBuilder-compatible method for player events loading
-  Future<List<Event>> _loadPlayerEventsFuture(Player? player) async {
-    if (player == null || player.id == null) return [];
-
-    // Check cache first
-    if (_playerEventsCache.containsKey(player.id!)) {
-      return _playerEventsCache[player.id!]!;
-    }
-
-    try {
-      final events = await _eventService.getEventsForPlayer(player.id!);
-      // Update cache
-      _playerEventsCache[player.id!] = events;
-      return events;
-    } catch (e) {
-      print('Error loading player events: $e');
-      return [];
     }
   }
 
@@ -733,12 +582,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                   (p) => p.id == player.id,
                 );
                 return ListTile(
-                  leading: const Icon(Icons.person, color: Color(0xFF00E5FF)),
+                  leading: const Icon(Icons.person, color: AppColors.primary),
                   title: Text(player.fullName),
                   subtitle: Text(player.jerseyDisplay),
                   trailing: isAlreadyAdded
                       ? const Icon(Icons.check, color: Colors.green)
-                      : const Icon(Icons.add, color: Color(0xFF00FF88)),
+                      : const Icon(Icons.add, color: AppColors.secondary),
                   onTap: isAlreadyAdded
                       ? null
                       : () async {
@@ -757,23 +606,23 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
                             Navigator.of(context).pop();
 
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     '${player.fullName} added to practice',
                                   ),
-                                  backgroundColor: const Color(0xFF00FF88),
+                                  backgroundColor: AppColors.secondary,
                                 ),
                               );
                             }
                           } catch (e) {
                             print('Error adding player to practice: $e');
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error adding player: $e'),
-                                  backgroundColor: const Color(0xFFFF4444),
+                                  backgroundColor: AppColors.redError,
                                 ),
                               );
                             }
@@ -835,7 +684,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const AlertDialog(
                 content: Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               );
             }
@@ -879,11 +728,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                     return ListTile(
                       leading: const Icon(
                         Icons.group,
-                        color: Color(0xFF00FF88),
+                        color: AppColors.secondary,
                       ),
                       title: Text(team.teamName),
                       subtitle: Text('${team.clubName} - ${team.age}U'),
-                      trailing: const Icon(Icons.add, color: Color(0xFF00E5FF)),
+                      trailing: const Icon(Icons.add, color: AppColors.primary),
                       onTap: () async {
                         try {
                           // Get all players from the team using the new teamId field
@@ -957,7 +806,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                 content: Text(
                                   '${teamPlayers.length} players from ${team.teamName} added to practice',
                                 ),
-                                backgroundColor: const Color(0xFF00FF88),
+                                backgroundColor: AppColors.secondary,
                               ),
                             );
                           }
@@ -967,7 +816,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Error adding team: $e'),
-                                backgroundColor: const Color(0xFFFF4444),
+                                backgroundColor: AppColors.redError,
                               ),
                             );
                           }
@@ -1012,21 +861,21 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _playerEventsCache.remove(player.id);
       }
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${player.fullName} removed from practice'),
-            backgroundColor: const Color(0xFFFF8800),
+            backgroundColor: AppColors.orangeWarning,
           ),
         );
       }
     } catch (e) {
       print('Error removing player from practice: $e');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error removing player: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
           ),
         );
       }
@@ -1151,32 +1000,32 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         eventDescription =
             '${serveType ?? 'Unknown'} serve: ${result ?? 'Unknown'}';
         eventColor = result == 'ace'
-            ? const Color(0xFF00FF88)
+            ? AppColors.secondary
             : result == 'in'
-            ? const Color(0xFF00E5FF)
-            : const Color(0xFFFF4444);
+            ? AppColors.primary
+            : AppColors.redError;
         eventIcon = Icons.sports_volleyball;
         break;
       case EventType.pass:
         final rating = event.metadata['rating'] as String?;
         eventDescription = 'Pass rating: ${rating ?? 'Unknown'}';
         eventColor = rating == 'ace' || rating == '3'
-            ? const Color(0xFF00FF88)
+            ? AppColors.secondary
             : rating == '2'
-            ? const Color(0xFF00E5FF)
+            ? AppColors.primary
             : rating == '1'
-            ? const Color(0xFFFF8800)
-            : const Color(0xFFFF4444);
+            ? AppColors.orangeWarning
+            : AppColors.redError;
         eventIcon = Icons.handshake;
         break;
       case EventType.attack:
         final result = event.metadata['result'] as String?;
         eventDescription = 'Attack: ${result ?? 'Unknown'}';
         eventColor = result == 'kill'
-            ? const Color(0xFF00FF88)
+            ? AppColors.secondary
             : result == 'in'
-            ? const Color(0xFF00E5FF)
-            : const Color(0xFFFF4444);
+            ? AppColors.primary
+            : AppColors.redError;
         eventIcon = Icons.sports;
         break;
       default:
@@ -1329,7 +1178,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
               },
               child: const Text(
                 'Edit',
-                style: TextStyle(color: Color(0xFF00E5FF)),
+                style: TextStyle(color: AppColors.primary),
               ),
             ),
             TextButton(
@@ -1558,7 +1407,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                     editEndY,
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00E5FF),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.black,
                   ),
                   child: const Text('Save'),
@@ -1913,17 +1762,17 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? const Color(0xFF00E5FF) : Colors.grey,
+            color: isSelected ? AppColors.primary : Colors.grey,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(4),
-          color: isSelected ? const Color(0xFF00E5FF).withOpacity(0.1) : null,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isSelected ? const Color(0xFF00E5FF) : Colors.grey,
+            color: isSelected ? AppColors.primary : Colors.grey,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -2005,11 +1854,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       Navigator.of(context).pop();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Event updated successfully'),
-            backgroundColor: const Color(0xFF00FF88),
+            backgroundColor: AppColors.secondary,
             action: SnackBarAction(
               label: 'Undo',
               textColor: Colors.white,
@@ -2020,11 +1869,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       }
     } catch (e) {
       print('Error updating event: $e');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating event: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
           ),
         );
       }
@@ -2107,11 +1956,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           break;
       }
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Undone: ${action.description}'),
-            backgroundColor: const Color(0xFF00E5FF),
+            backgroundColor: AppColors.primary,
             action: SnackBarAction(
               label: 'Redo',
               textColor: Colors.white,
@@ -2122,11 +1971,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       }
     } catch (e) {
       print('Error undoing action: $e');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error undoing action: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
           ),
         );
       }
@@ -2195,21 +2044,21 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           break;
       }
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Redone: ${action.description}'),
-            backgroundColor: const Color(0xFF00FF88),
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
     } catch (e) {
       print('Error redoing action: $e');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error redoing action: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
           ),
         );
       }
@@ -2238,11 +2087,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         }
       });
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Event deleted successfully'),
-            backgroundColor: const Color(0xFF00FF88),
+            backgroundColor: AppColors.secondary,
             action: SnackBarAction(
               label: 'Undo',
               textColor: Colors.white,
@@ -2253,11 +2102,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       }
     } catch (e) {
       print('Error deleting event: $e');
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting event: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
           ),
         );
       }
@@ -2433,11 +2282,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     });
   }
 
-  void _onPlayerTap(Player player) {
-    // This method is no longer used since we removed the zone-first workflow
-    // Player selection now works like action selection - select player, then tap zone or action
-  }
-
   void _assignPlayerToZone(Player player, String zoneKey) {
     setState(() {
       // Create a new map to ensure proper repainting
@@ -2454,15 +2298,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Clear player selection
       _selectedPlayer = null;
     });
-  }
-
-  String _getPlayerZone(int playerId) {
-    for (String zoneKey in _courtZones.keys) {
-      if (_courtZones[zoneKey] == playerId) {
-        return zoneKey.split('_')[1];
-      }
-    }
-    return 'None';
   }
 
   bool _isPlayerOnCourt(int playerId) {
@@ -2550,7 +2385,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: const Color(0xFF00E5FF),
+                              color: AppColors.primary,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(8),
@@ -2571,7 +2406,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     'SERVE',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: Color(0xFF00E5FF),
+                                      color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -2584,7 +2419,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Float',
-                                        const Color(0xFF00E5FF),
+                                        AppColors.primary,
                                         () => _selectServeType('float'),
                                         _selectedServeType == 'float',
                                       ),
@@ -2593,7 +2428,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Hybrid',
-                                        const Color(0xFF00E5FF),
+                                        AppColors.primary,
                                         () => _selectServeType('hybrid'),
                                         _selectedServeType == 'hybrid',
                                       ),
@@ -2602,7 +2437,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Spin',
-                                        const Color(0xFF00E5FF),
+                                        AppColors.primary,
                                         () => _selectServeType('spin'),
                                         _selectedServeType == 'spin',
                                       ),
@@ -2616,7 +2451,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Ace',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                         () => _selectServeResult('ace'),
                                         _selectedServeResult == 'ace',
                                       ),
@@ -2625,7 +2460,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'In',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                         () => _selectServeResult('in'),
                                         _selectedServeResult == 'in',
                                       ),
@@ -2634,7 +2469,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Error',
-                                        const Color(0xFFFF4444),
+                                        AppColors.redError,
                                         () => _selectServeResult('error'),
                                         _selectedServeResult == 'error',
                                       ),
@@ -2654,7 +2489,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: const Color(0xFF00FF88),
+                              color: AppColors.secondary,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(8),
@@ -2675,7 +2510,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     'PASS',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: Color(0xFF00FF88),
+                                      color: AppColors.secondary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -2688,7 +2523,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Ace',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                         () => _selectPassRating('ace'),
                                         _selectedPassRating == 'ace',
                                       ),
@@ -2697,7 +2532,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         '3',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                         () => _selectPassRating('3'),
                                         _selectedPassRating == '3',
                                       ),
@@ -2706,7 +2541,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         '2',
-                                        const Color(0xFF00E5FF),
+                                        AppColors.primary,
                                         () => _selectPassRating('2'),
                                         _selectedPassRating == '2',
                                       ),
@@ -2715,7 +2550,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         '1',
-                                        const Color(0xFFFF8800),
+                                        AppColors.orangeWarning,
                                         () => _selectPassRating('1'),
                                         _selectedPassRating == '1',
                                       ),
@@ -2724,7 +2559,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         '0',
-                                        const Color(0xFFFF4444),
+                                        AppColors.redError,
                                         () => _selectPassRating('0'),
                                         _selectedPassRating == '0',
                                       ),
@@ -2740,12 +2575,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     _buildPassTypeButton(
                                       'Overhand',
                                       'overhand',
-                                      const Color(0xFF00FF88),
+                                      AppColors.secondary,
                                     ),
                                     _buildPassTypeButton(
                                       'Platform',
                                       'platform',
-                                      const Color(0xFF00FF88),
+                                      AppColors.secondary,
                                     ),
                                   ],
                                 ),
@@ -2767,7 +2602,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: const Color(0xFFFF8800),
+                              color: AppColors.orangeWarning,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(8),
@@ -2801,7 +2636,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Kill',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                         () => _selectAttackResult('kill'),
                                         _selectedAttackResult == 'kill',
                                       ),
@@ -2810,7 +2645,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'In',
-                                        const Color(0xFF00E5FF),
+                                        AppColors.primary,
                                         () => _selectAttackResult('in'),
                                         _selectedAttackResult == 'in',
                                       ),
@@ -2819,7 +2654,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                     Expanded(
                                       child: _buildCompactButton(
                                         'Error',
-                                        const Color(0xFFFF4444),
+                                        AppColors.redError,
                                         () => _selectAttackResult('error'),
                                         _selectedAttackResult == 'error',
                                       ),
@@ -2946,12 +2781,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                       _buildFreeballResultButton(
                                         'Good',
                                         'good',
-                                        const Color(0xFF00FF88),
+                                        AppColors.secondary,
                                       ),
                                       _buildFreeballResultButton(
                                         'Bad',
                                         'bad',
-                                        const Color(0xFFFF4444),
+                                        AppColors.redError,
                                       ),
                                     ],
                                   ),
@@ -3206,7 +3041,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       style: OutlinedButton.styleFrom(
         foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
-            ? buttonColor.withOpacity(0.2)
+            ? buttonColor.withValues(alpha: 0.2)
             : Colors.transparent,
         side: BorderSide(
           color: isDisabled
@@ -3239,12 +3074,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       style: OutlinedButton.styleFrom(
         foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
-            ? buttonColor.withOpacity(0.3)
+            ? buttonColor.withValues(alpha: 0.3)
             : Colors.transparent,
         side: BorderSide(
           color: isDisabled
               ? Colors.grey
-              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+              : (isSelected ? buttonColor : buttonColor.withValues(alpha: 0.5)),
           width: isSelected ? 2 : 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -3272,12 +3107,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       style: OutlinedButton.styleFrom(
         foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
-            ? buttonColor.withOpacity(0.3)
+            ? buttonColor.withValues(alpha: 0.3)
             : Colors.transparent,
         side: BorderSide(
           color: isDisabled
               ? Colors.grey
-              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+              : (isSelected ? buttonColor : buttonColor.withValues(alpha: 0.5)),
           width: isSelected ? 2 : 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -3305,12 +3140,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       style: OutlinedButton.styleFrom(
         foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
-            ? buttonColor.withOpacity(0.3)
+            ? buttonColor.withValues(alpha: 0.3)
             : Colors.transparent,
         side: BorderSide(
           color: isDisabled
               ? Colors.grey
-              : (isSelected ? buttonColor : buttonColor.withOpacity(0.5)),
+              : (isSelected ? buttonColor : buttonColor.withValues(alpha: 0.5)),
           width: isSelected ? 2 : 1,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -3339,10 +3174,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       return SizedBox(
         width: 60,
         height: 40,
-        child: Container(
-          child: const Center(
-            child: Icon(Icons.location_off, size: 16, color: Colors.grey),
-          ),
+        child: const Center(
+          child: Icon(Icons.location_off, size: 16, color: Colors.grey),
         ),
       );
     }
@@ -3394,13 +3227,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
   Color _getSaveButtonColor() {
     if (_selectedServeType != null || _selectedServeResult != null) {
-      return const Color(0xFF00E5FF); // Blue for serve
+      return AppColors.primary; // Blue for serve
     }
     if (_selectedPassRating != null) {
-      return const Color(0xFF00FF88); // Green for pass
+      return AppColors.secondary; // Green for pass
     }
     if (_selectedAttackResult != null) {
-      return const Color(0xFFFF8800); // Orange for attack
+      return AppColors.orangeWarning; // Orange for attack
     }
     if (_selectedFreeballAction != null) {
       return const Color(0xFF9C27B0); // Purple for freeball
@@ -3514,10 +3347,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Reset the serve selections and coordinates
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedServeType = null;
         _selectedServeResult = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -3533,7 +3364,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Refresh team players to update stats
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Serve saved for ${tempEvent.player.firstName}'),
@@ -3542,7 +3373,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving serve action: $e'),
@@ -3724,15 +3555,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
               : word,
         )
         .join(' ');
-  }
-
-  void _startCoordinateRecording(String action) {
-    setState(() {
-      _isRecordingCoordinates = true;
-      _recordingAction = action;
-      // Don't clear player selection - they can still be used for stats recording
-      // Don't clear existing coordinates - allow recording over them
-    });
   }
 
   void _onCourtTap(double x, double y) {
@@ -3999,10 +3821,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedPassRating = null;
         _selectedPassType = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4017,7 +3837,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Pass saved for ${tempEvent.player.firstName}'),
@@ -4026,7 +3846,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving pass action: $e'),
@@ -4082,10 +3902,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedAttackResult = null;
         _selectedAttackMetadata.clear();
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4100,7 +3918,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Attack saved for ${tempEvent.player.firstName}'),
@@ -4109,7 +3927,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving attack action: $e'),
@@ -4165,10 +3983,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedFreeballAction = null;
         _selectedFreeballResult = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4183,7 +3999,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Freeball saved for ${tempEvent.player.firstName}'),
@@ -4192,7 +4008,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving freeball action: $e'),
@@ -4243,9 +4059,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedBlockingType = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4260,7 +4074,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Block saved for ${tempEvent.player.firstName}'),
@@ -4269,7 +4083,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving blocking action: $e'),
@@ -4318,9 +4132,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedDigType = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4335,7 +4147,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Dig saved for ${tempEvent.player.firstName}'),
@@ -4344,7 +4156,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving dig action: $e'),
@@ -4393,9 +4205,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       setState(() {
         _selectedPlayer = null;
-        _selectedActionType = null;
         _selectedSetType = null;
-        _isRecordingCoordinates = false;
         _recordingAction = null;
         _hasStartPoint = false;
         _startX = null;
@@ -4410,7 +4220,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
       await _loadTeamPlayers();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Set saved for ${tempEvent.player.firstName}'),
@@ -4419,7 +4229,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error saving set action: $e'),

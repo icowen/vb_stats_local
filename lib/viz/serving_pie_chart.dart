@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/player.dart';
 import '../models/event.dart';
+import '../utils/app_colors.dart';
 
 class ServingPieChart extends StatefulWidget {
   final List<Player> practicePlayers;
@@ -109,26 +110,21 @@ class _ServingPieChartState extends State<ServingPieChart> {
                   context,
                   'Makes',
                   totalMakes,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildStatItem(
                   context,
                   'Errors',
                   totalErrors,
-                  const Color(0xFFFF4444),
+                  AppColors.redError,
                 ),
                 _buildStatItem(
                   context,
                   'Attempts',
                   totalServes,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
-                _buildStatItem(
-                  context,
-                  'Aces',
-                  totalAces,
-                  const Color(0xFFFFFF00),
-                ),
+                _buildStatItem(context, 'Aces', totalAces, AppColors.setColor),
               ],
             ),
             const SizedBox(height: 8),
@@ -171,9 +167,9 @@ class _ServingPieChartState extends State<ServingPieChart> {
 
   Widget _buildLegend(Map<String, int> servingTypes, int totalServes) {
     final colors = {
-      'float': const Color(0xFF00E5FF),
-      'hybrid': const Color(0xFF00B8D4),
-      'spin': const Color(0xFF0097A7),
+      'float': AppColors.primary,
+      'hybrid': AppColors.hybridBlue,
+      'spin': AppColors.spinBlue,
     };
 
     final labels = {'float': 'Float', 'hybrid': 'Hybrid', 'spin': 'Spin'};
@@ -321,7 +317,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF00FF88),
+                      color: AppColors.secondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -330,7 +326,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
                     '(${serveType == 'all' ? _getTotalAceCount() : _getAceCountForServeType(serveType)})',
                     style: const TextStyle(
                       fontSize: 8,
-                      color: Color(0xFFFFFF00),
+                      color: AppColors.setColor,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -359,7 +355,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
                 style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF4444),
+                  color: AppColors.redError,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -407,7 +403,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
         message: 'Makes: ${makePercent}% ($inCount)',
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF00FF88),
+            color: AppColors.secondary,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -430,7 +426,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
         message: 'Misses: ${missPercent}% ($errorCount)',
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFFF4444),
+            color: AppColors.redError,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -461,7 +457,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
             message: 'Makes: ${makePercent}% ($inCount)',
             child: Container(
               decoration: const BoxDecoration(
-                color: Color(0xFF00FF88),
+                color: AppColors.secondary,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(10),
                   bottomLeft: Radius.circular(10),
@@ -487,7 +483,7 @@ class _ServingPieChartState extends State<ServingPieChart> {
             message: 'Misses: ${missPercent}% ($errorCount)',
             child: Container(
               decoration: const BoxDecoration(
-                color: Color(0xFFFF4444),
+                color: AppColors.redError,
                 borderRadius: BorderRadius.only(
                   topRight: Radius.circular(10),
                   bottomRight: Radius.circular(10),
@@ -585,9 +581,9 @@ class PieChartPainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2 - 10;
 
     final colors = {
-      'float': const Color(0xFF00E5FF),
-      'hybrid': const Color(0xFF00B8D4),
-      'spin': const Color(0xFF0097A7),
+      'float': AppColors.primary,
+      'hybrid': AppColors.hybridBlue,
+      'spin': AppColors.spinBlue,
     };
 
     double startAngle = -math.pi / 2; // Start from top

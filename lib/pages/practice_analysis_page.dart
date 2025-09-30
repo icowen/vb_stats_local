@@ -11,6 +11,7 @@ import '../viz/passing_histogram.dart';
 import '../viz/serving_pie_chart.dart';
 import '../viz/attacking_bar_chart.dart';
 import '../viz/player_stats_table.dart';
+import '../utils/app_colors.dart';
 
 class PracticeAnalysisPage extends StatefulWidget {
   final Practice practice;
@@ -31,7 +32,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
 
   // Filter state
   EventType? _selectedActionType;
-  Set<String> _selectedMetadata = {}; // Format: "key:value"
+  final Set<String> _selectedMetadata = {}; // Format: "key:value"
   Set<Player> _selectedPlayers = {};
   List<Event> _displayedEvents = [];
 
@@ -170,19 +171,19 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
   Color _getActionTypeColor(EventType actionType) {
     switch (actionType) {
       case EventType.serve:
-        return const Color(0xFF00E5FF); // Light blue
+        return AppColors.primary;
       case EventType.pass:
-        return const Color(0xFF00FF88); // Light green
+        return AppColors.secondary;
       case EventType.attack:
-        return const Color(0xFFFF8800); // Orange
+        return AppColors.orangeWarning;
       case EventType.block:
-        return const Color(0xFF9C27B0); // Purple
+        return AppColors.blockColor;
       case EventType.dig:
-        return const Color(0xFFFF4444); // Red
+        return AppColors.redError;
       case EventType.set:
-        return const Color(0xFFFFFF00); // Yellow
+        return AppColors.setColor;
       case EventType.freeball:
-        return const Color(0xFF00FF00); // Bright green
+        return AppColors.freeballColor;
     }
   }
 
@@ -522,7 +523,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : _practicePlayers.isEmpty
           ? const Center(
@@ -608,7 +609,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
             Icons.touch_app,
             highlights['bestPasser']!,
             '${highlights['bestPasserAvg']!.toStringAsFixed(2)} avg',
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
         ),
         const SizedBox(width: 8),
@@ -618,7 +619,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
             Icons.sports_volleyball,
             highlights['bestServer']!,
             '${highlights['bestServerAces']} aces',
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
         ),
         const SizedBox(width: 8),
@@ -628,7 +629,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
             Icons.sports_handball,
             highlights['bestAttacker']!,
             '${highlights['bestAttackerKills']} kills',
-            const Color(0xFFFF6B6B),
+            AppColors.chartTertiary,
           ),
         ),
         const SizedBox(width: 8),
@@ -638,7 +639,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
             Icons.trending_up,
             highlights['mostEfficient']!,
             '${_formatHitPercentage(highlights['bestHitPercentage']!)} hit %',
-            const Color(0xFFFFFF00),
+            AppColors.setColor,
           ),
         ),
       ],
@@ -982,10 +983,10 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isSelected ? color : Colors.grey[600],
                     backgroundColor: isSelected
-                        ? color.withOpacity(0.2)
+                        ? color.withValues(alpha: 0.2)
                         : Colors.transparent,
                     side: BorderSide(
-                      color: isSelected ? color : color.withOpacity(0.5),
+                      color: isSelected ? color : color.withValues(alpha: 0.5),
                       width: isSelected ? 2 : 1,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -1039,15 +1040,15 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                             onPressed: () => _toggleMetadata(groupName, value),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: isSelected
-                                  ? const Color(0xFF00FF88)
+                                  ? AppColors.secondary
                                   : Colors.grey[600],
                               backgroundColor: isSelected
-                                  ? const Color(0xFF00FF88).withOpacity(0.2)
+                                  ? AppColors.secondaryWithOpacity20
                                   : Colors.transparent,
                               side: BorderSide(
                                 color: isSelected
-                                    ? const Color(0xFF00FF88)
-                                    : const Color(0xFF00FF88).withOpacity(0.5),
+                                    ? AppColors.secondary
+                                    : AppColors.secondaryWithOpacity50,
                                 width: isSelected ? 2 : 1,
                               ),
                               padding: const EdgeInsets.symmetric(
@@ -1132,8 +1133,10 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                        color: Colors.blue.withValues(alpha: 0.1),
+                        border: Border.all(
+                          color: Colors.blue.withValues(alpha: 0.3),
+                        ),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
@@ -1217,7 +1220,9 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                               });
                             },
                             selected: isSelected,
-                            selectedTileColor: Colors.blue.withOpacity(0.1),
+                            selectedTileColor: Colors.blue.withValues(
+                              alpha: 0.1,
+                            ),
                           );
                         },
                       ),
@@ -1272,11 +1277,11 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         barrierDismissible: false,
         builder: (BuildContext dialogContext) {
           return const AlertDialog(
-            backgroundColor: Color(0xFF2D2D2D),
+            backgroundColor: AppColors.courtBackground,
             content: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: Color(0xFF00E5FF)),
+                CircularProgressIndicator(color: AppColors.primary),
                 SizedBox(width: 20),
                 Text(
                   'Generating PDF...',
@@ -1339,7 +1344,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
                 Text('Full path: $filePath', style: TextStyle(fontSize: 10)),
               ],
             ),
-            backgroundColor: const Color(0xFF00FF88),
+            backgroundColor: AppColors.secondary,
             duration: const Duration(seconds: 6),
           ),
         );
@@ -1353,7 +1358,7 @@ class _PracticeAnalysisPageState extends State<PracticeAnalysisPage> {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           SnackBar(
             content: Text('Error generating PDF: $e'),
-            backgroundColor: const Color(0xFFFF4444),
+            backgroundColor: AppColors.redError,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -1375,21 +1380,21 @@ class _MultiEventCourtPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final outerPaint = Paint()
-      ..color = const Color(0xFF2D2D2D)
+      ..color = AppColors.courtBackground
       ..style = PaintingStyle.fill;
 
     final outerLinePaint = Paint()
-      ..color = const Color(0xFF00E5FF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
     final courtLinePaint = Paint()
-      ..color = const Color(0xFF00E5FF)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     final netPaint = Paint()
-      ..color = const Color(0xFF9C27B0)
+      ..color = AppColors.blockColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 
@@ -1424,7 +1429,7 @@ class _MultiEventCourtPainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(courtOffsetX, courtOffsetY, courtSize, courtHeight),
       Paint()
-        ..color = const Color(0xFF1A1A1A)
+        ..color = AppColors.courtInnerBackground
         ..style = PaintingStyle.fill,
     );
 
@@ -1462,7 +1467,7 @@ class _MultiEventCourtPainter extends CustomPainter {
 
     // Draw 10-foot attack lines
     final attackLinePaint = Paint()
-      ..color = const Color(0xFF666666)
+      ..color = AppColors.tenFootLineColor
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -1525,7 +1530,7 @@ class _MultiEventCourtPainter extends CustomPainter {
             Offset(x, y),
             Offset(endX, endY),
             Paint()
-              ..color = eventColor.withOpacity(0.5)
+              ..color = eventColor.withValues(alpha: 0.5)
               ..strokeWidth = 2,
           );
         }
@@ -1536,19 +1541,19 @@ class _MultiEventCourtPainter extends CustomPainter {
   Color _getEventColor(Event event) {
     switch (event.type) {
       case EventType.serve:
-        return const Color(0xFF00E5FF); // Light blue
+        return AppColors.primary;
       case EventType.pass:
-        return const Color(0xFF00FF88); // Light green
+        return AppColors.secondary;
       case EventType.attack:
-        return const Color(0xFFFF8800); // Orange
+        return AppColors.orangeWarning;
       case EventType.block:
-        return const Color(0xFF9C27B0); // Purple
+        return AppColors.blockColor;
       case EventType.dig:
-        return const Color(0xFFFF4444); // Red
+        return AppColors.redError;
       case EventType.set:
-        return const Color(0xFFFFFF00); // Yellow
+        return AppColors.setColor;
       case EventType.freeball:
-        return const Color(0xFF00FF00); // Bright green
+        return AppColors.freeballColor;
     }
   }
 

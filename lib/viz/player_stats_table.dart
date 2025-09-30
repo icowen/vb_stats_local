@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/event.dart';
+import '../utils/app_colors.dart';
 
 class PlayerStatsTable extends StatefulWidget {
   final Map<String, double> columnWidths;
@@ -87,16 +88,16 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF00E5FF).withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             border: const Border(
-              bottom: BorderSide(color: Color(0xFF00E5FF), width: 1),
+              bottom: BorderSide(color: AppColors.primary, width: 1),
             ),
           ),
           child: const Text(
             'Player Info',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00E5FF),
+              color: AppColors.primary,
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -106,7 +107,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
         Container(
           decoration: const BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: Color(0xFF00E5FF), width: 1),
+              bottom: BorderSide(color: AppColors.primary, width: 1),
             ),
           ),
           child: Row(
@@ -114,12 +115,12 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
               _buildHeaderCell(
                 'Player',
                 widget.columnWidths['Player']!,
-                const Color(0xFF00E5FF),
+                AppColors.primary,
               ),
               _buildHeaderCell(
                 'Jersey',
                 widget.columnWidths['Jersey']!,
-                const Color(0xFF00E5FF),
+                AppColors.primary,
                 isLast: true,
               ),
             ],
@@ -139,12 +140,12 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
                   _buildDataCell(
                     player.fullName,
                     widget.columnWidths['Player']!,
-                    const Color(0xFF00E5FF),
+                    AppColors.primary,
                   ),
                   _buildDataCell(
                     player.jerseyNumber?.toString() ?? '-',
                     widget.columnWidths['Jersey']!,
-                    const Color(0xFF00E5FF),
+                    AppColors.primary,
                     isLast: true,
                   ),
                 ],
@@ -247,16 +248,16 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF00FF88).withOpacity(0.2),
+              color: AppColors.secondary.withValues(alpha: 0.2),
               border: const Border(
-                bottom: BorderSide(color: Color(0xFF00FF88), width: 1),
+                bottom: BorderSide(color: AppColors.secondary, width: 1),
               ),
             ),
             child: const Text(
               'Serving',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF00FF88),
+                color: AppColors.secondary,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -266,7 +267,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           Container(
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Color(0xFF00FF88), width: 1),
+                bottom: BorderSide(color: AppColors.secondary, width: 1),
               ),
             ),
             child: Row(
@@ -274,37 +275,37 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
                 _buildHeaderCell(
                   'Serves',
                   widget.columnWidths['Serves']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'Aces',
                   widget.columnWidths['Aces']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'In',
                   widget.columnWidths['In']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'Errors',
                   widget.columnWidths['Errors']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'Float',
                   widget.columnWidths['Float']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'Hybrid',
                   widget.columnWidths['Hybrid']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                 ),
                 _buildHeaderCell(
                   'Spin',
                   widget.columnWidths['Spin']!,
-                  const Color(0xFF00FF88),
+                  AppColors.secondary,
                   isLast: true,
                 ),
               ],
@@ -332,16 +333,16 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF00E5FF).withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               border: const Border(
-                bottom: BorderSide(color: Color(0xFF00E5FF), width: 1),
+                bottom: BorderSide(color: AppColors.primary, width: 1),
               ),
             ),
             child: const Text(
               'Passing',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF00E5FF),
+                color: AppColors.primary,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -351,7 +352,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           Container(
             decoration: const BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Color(0xFF00E5FF), width: 1),
+                bottom: BorderSide(color: AppColors.primary, width: 1),
               ),
             ),
             child: Row(
@@ -359,37 +360,37 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
                 _buildHeaderCell(
                   'Passes',
                   widget.columnWidths['Passes']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   'Average',
                   widget.columnWidths['Average']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   'Ace',
                   widget.columnWidths['Ace']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   '0',
                   widget.columnWidths['0']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   '1',
                   widget.columnWidths['1']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   '2',
                   widget.columnWidths['2']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                 ),
                 _buildHeaderCell(
                   '3',
                   widget.columnWidths['3']!,
-                  const Color(0xFF00E5FF),
+                  AppColors.primary,
                   isLast: true,
                 ),
               ],
@@ -415,7 +416,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF0097A7).withOpacity(0.2),
+              color: const Color(0xFF0097A7).withValues(alpha: 0.2),
               border: const Border(
                 bottom: BorderSide(color: Color(0xFF0097A7), width: 1),
               ),
@@ -488,37 +489,37 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           _buildDataCell(
             servingStats['total'].toString(),
             widget.columnWidths['Serves']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             (servingStats['ace'] ?? 0).toString(),
             widget.columnWidths['Aces']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             servingStats['in'].toString(),
             widget.columnWidths['In']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             servingStats['error'].toString(),
             widget.columnWidths['Errors']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             servingStats['float'].toString(),
             widget.columnWidths['Float']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             servingStats['hybrid'].toString(),
             widget.columnWidths['Hybrid']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
           ),
           _buildDataCell(
             servingStats['spin'].toString(),
             widget.columnWidths['Spin']!,
-            const Color(0xFF00FF88),
+            AppColors.secondary,
             isLast: true,
           ),
         ],
@@ -541,37 +542,37 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
           _buildDataCell(
             passingStats['total'].toString(),
             widget.columnWidths['Passes']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             (passingStats['average'] as double).toStringAsFixed(2),
             widget.columnWidths['Average']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             passingStats['ace'].toString(),
             widget.columnWidths['Ace']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             passingStats['0'].toString(),
             widget.columnWidths['0']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             passingStats['1'].toString(),
             widget.columnWidths['1']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             passingStats['2'].toString(),
             widget.columnWidths['2']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
           ),
           _buildDataCell(
             passingStats['3'].toString(),
             widget.columnWidths['3']!,
-            const Color(0xFF00E5FF),
+            AppColors.primary,
             isLast: true,
           ),
         ],
@@ -689,7 +690,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF6B6B).withOpacity(0.2),
+              color: const Color(0xFFFF6B6B).withValues(alpha: 0.2),
               border: const Border(
                 bottom: BorderSide(color: Color(0xFFFF6B6B), width: 1),
               ),
@@ -748,7 +749,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.2),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
               border: const Border(
                 bottom: BorderSide(color: Color(0xFF4CAF50), width: 1),
               ),
@@ -802,7 +803,7 @@ class _PlayerStatsTableState extends State<PlayerStatsTable> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF2196F3).withOpacity(0.2),
+              color: const Color(0xFF2196F3).withValues(alpha: 0.2),
               border: const Border(
                 bottom: BorderSide(color: Color(0xFF2196F3), width: 1),
               ),

@@ -6,7 +6,7 @@ Don't run bash commands - print them, wait and let me run them
 
 ## Code Style
 - Use flutter/dart for all new files
-- Prefer smaller files and reusable components
+- Prefer smaller files and reusable components (Avoid files over 500 lines if possible)
 - Use a consisten dark theme throughout, with shades of light neon blue or green for accents
 - Dates should be formatted like YYYY-MM-DD when displayed
 - Percentages should be displayed as .xxx, unless it is 1 which should be 1.xxx
@@ -18,3 +18,4 @@ Don't run bash commands - print them, wait and let me run them
 - Utils are general functions used in multiple spots lib/utils/
 - Viz contains graphs/charts for analysis lib/viz/
 - Widgets are reusable generic components for consistent styling and behavior lib/widgers/ 
+- Providers share data across Widgets and pages to make smaller components and reduce API calls. They are in lib/providers/

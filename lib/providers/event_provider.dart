@@ -22,8 +22,8 @@ class EventProvider extends ChangeNotifier {
   final EventService _eventService = EventService();
 
   // Undo/Redo system
-  List<UndoAction> _undoStack = [];
-  List<UndoAction> _redoStack = [];
+  final List<UndoAction> _undoStack = [];
+  final List<UndoAction> _redoStack = [];
 
   static const int maxUndoActions = 20;
 
@@ -210,10 +210,5 @@ class EventProvider extends ChangeNotifier {
     if (_undoStack.length > maxUndoActions) {
       _undoStack.removeAt(0);
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

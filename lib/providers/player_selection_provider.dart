@@ -28,7 +28,7 @@ class PlayerSelectionProvider extends ChangeNotifier {
   String? _selectedServeType;
 
   // Attack metadata selection (multiple selection)
-  Set<String> _selectedAttackMetadata = {};
+  final Set<String> _selectedAttackMetadata = {};
 
   // Pass type selection (single selection)
   String? _selectedPassType;
@@ -275,10 +275,5 @@ class PlayerSelectionProvider extends ChangeNotifier {
     _selectedSetType = null;
     clearCoordinates();
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
