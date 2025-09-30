@@ -139,6 +139,49 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
+  // FutureBuilder-compatible method for initial data loading
+  Future<Map<String, dynamic>> _loadInitialData() async {
+    try {
+      // Ensure database tables exist
+      await _dbHelper.ensureTablesExist();
+
+      // Load all initial data in parallel
+      final results = await Future.wait([
+        _playerService.getPracticePlayers(widget.practice.id!),
+        _playerService.getAllPlayers(),
+        _eventService.getEventsForPractice(widget.practice.id!),
+      ]);
+
+      final practicePlayers = results[0] as List<Player>;
+      final allPlayers = results[1] as List<Player>;
+      final teamEvents = results[2] as List<Event>;
+
+      print(
+        'Practice ${widget.practice.id} has ${practicePlayers.length} players',
+      );
+      for (final player in practicePlayers) {
+        print('  - ${player.fullName} (ID: ${player.id})');
+      }
+
+      return {
+        'teamPlayers': _sortPlayers(practicePlayers),
+        'allPlayers': allPlayers,
+        'teamEvents': teamEvents,
+        'success': true,
+        'error': null,
+      };
+    } catch (e) {
+      print('Error loading initial data: $e');
+      return {
+        'teamPlayers': <Player>[],
+        'allPlayers': <Player>[],
+        'teamEvents': <Event>[],
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   Future<void> _loadTeamPlayers() async {
     try {
       final practicePlayers = await _playerService.getPracticePlayers(
@@ -539,6 +582,39 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     }
   }
 
+  // FutureBuilder-compatible method for player cache initialization
+  Future<Map<int, List<Event>>> _initializePlayerCacheFuture(
+    List<Player> teamPlayers,
+  ) async {
+    if (_cacheInitialized) return _playerEventsCache;
+
+    final Map<int, List<Event>> cache = {};
+
+    try {
+      // Load events for all players in parallel
+      final futures = teamPlayers
+          .where((player) => player.id != null)
+          .map((player) => _eventService.getEventsForPlayer(player.id!));
+
+      final results = await Future.wait(futures);
+
+      int index = 0;
+      for (final player in teamPlayers.where((p) => p.id != null)) {
+        cache[player.id!] = results[index];
+        index++;
+      }
+
+      _playerEventsCache.addAll(cache);
+      _cacheInitialized = true;
+      print('Player cache initialized for ${teamPlayers.length} players');
+
+      return cache;
+    } catch (e) {
+      print('Error initializing player cache: $e');
+      return {};
+    }
+  }
+
   void _selectPlayer(Player player) async {
     if (_selectedPlayer?.id == player.id) {
       // If clicking the same player, unselect them
@@ -608,6 +684,26 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     } catch (e) {
       print('Error loading player events: $e');
       _playerEvents = [];
+    }
+  }
+
+  // FutureBuilder-compatible method for player events loading
+  Future<List<Event>> _loadPlayerEventsFuture(Player? player) async {
+    if (player == null || player.id == null) return [];
+
+    // Check cache first
+    if (_playerEventsCache.containsKey(player.id!)) {
+      return _playerEventsCache[player.id!]!;
+    }
+
+    try {
+      final events = await _eventService.getEventsForPlayer(player.id!);
+      // Update cache
+      _playerEventsCache[player.id!] = events;
+      return events;
+    } catch (e) {
+      print('Error loading player events: $e');
+      return [];
     }
   }
 
