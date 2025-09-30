@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/player.dart';
 
 class VolleyballCourt extends StatefulWidget {
   final Function(double x, double y)? onCourtTap;
@@ -10,6 +11,10 @@ class VolleyballCourt extends StatefulWidget {
   final String? selectedAction;
   final bool isRecording;
   final bool hasStartPoint;
+  final Map<String, int?>? courtZones;
+  final Function(String)? onZoneTap;
+  final List<Player>? teamPlayers;
+  final String? selectedZone;
 
   const VolleyballCourt({
     super.key,
@@ -22,6 +27,10 @@ class VolleyballCourt extends StatefulWidget {
     this.selectedAction,
     this.isRecording = false,
     this.hasStartPoint = false,
+    this.courtZones,
+    this.onZoneTap,
+    this.teamPlayers,
+    this.selectedZone,
   });
 
   @override
@@ -51,15 +60,55 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                 children: [
                   GestureDetector(
                     onTapDown: (details) {
+                      // Check if tap is on a zone first - if so, don't record coordinates
+                      if (widget.onZoneTap != null &&
+                          widget.courtZones != null) {
+                        final localPosition = details.localPosition;
+                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                        final zoneWidth = 120.0; // 240/2 per side
+                        final zoneHeight = 80.0; // 240/3 rows
+
+                        // Check home side zones (left side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final x = courtOffsetX + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              return; // Don't record coordinates if on a zone
+                            }
+                          }
+                        }
+
+                        // Check away side zones (right side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final x = courtOffsetX + 240 + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              return; // Don't record coordinates if on a zone
+                            }
+                          }
+                        }
+                      }
+
+                      // Handle court tap for coordinate recording (only if not on a zone)
                       if (widget.onCourtTap != null && widget.isRecording) {
                         // Use the GestureDetector's local position directly
                         final localPosition = details.localPosition;
 
                         // Convert to normalized coordinates (0-1) within the court
                         // Use the same offset calculation as the painter
-                        final courtOffsetX =
-                            74.83; // Match the painter's offset
-                        final courtOffsetY = 45.0; // Match the painter's offset
+                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
                         final x =
                             (localPosition.dx - courtOffsetX) /
                             480.0; // 0-1 normalized
@@ -68,6 +117,53 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                             240.0; // 0-1 normalized
 
                         widget.onCourtTap!(x, y);
+                      }
+                    },
+                    onLongPressStart: (details) {
+                      // Handle zone long press for zone selection
+                      if (widget.onZoneTap != null &&
+                          widget.courtZones != null) {
+                        final localPosition = details.localPosition;
+                        final courtOffsetX = (660.0 - 480.0) / 2; // 90 pixels
+                        final courtOffsetY = (330.0 - 240.0) / 2; // 45 pixels
+                        final zoneWidth = 120.0; // 240/2 per side
+                        final zoneHeight = 80.0; // 240/3 rows
+
+                        // Check home side zones (left side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final zoneNum = col * 3 + row + 1;
+                            final zoneKey = 'home_$zoneNum';
+                            final x = courtOffsetX + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              widget.onZoneTap!(zoneKey);
+                              return;
+                            }
+                          }
+                        }
+
+                        // Check away side zones (right side)
+                        for (int col = 0; col < 2; col++) {
+                          for (int row = 0; row < 3; row++) {
+                            final zoneNum = col * 3 + row + 1;
+                            final zoneKey = 'away_$zoneNum';
+                            final x = courtOffsetX + 240 + col * zoneWidth;
+                            final y = courtOffsetY + row * zoneHeight;
+
+                            if (localPosition.dx >= x &&
+                                localPosition.dx <= x + zoneWidth &&
+                                localPosition.dy >= y &&
+                                localPosition.dy <= y + zoneHeight) {
+                              widget.onZoneTap!(zoneKey);
+                              return;
+                            }
+                          }
+                        }
                       }
                     },
                     child: CustomPaint(
@@ -82,6 +178,9 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                         endY: widget.endY,
                         hasStartPoint: widget.hasStartPoint,
                         isRecording: widget.isRecording,
+                        courtZones: widget.courtZones,
+                        teamPlayers: widget.teamPlayers,
+                        selectedZone: widget.selectedZone,
                       ),
                     ),
                   ),
@@ -176,6 +275,9 @@ class VolleyballCourtPainter extends CustomPainter {
   final double? endY;
   final bool hasStartPoint;
   final bool isRecording;
+  final Map<String, int?>? courtZones;
+  final List<Player>? teamPlayers;
+  final String? selectedZone;
 
   VolleyballCourtPainter({
     this.startX,
@@ -184,6 +286,9 @@ class VolleyballCourtPainter extends CustomPainter {
     this.endY,
     this.hasStartPoint = false,
     this.isRecording = false,
+    this.courtZones,
+    this.teamPlayers,
+    this.selectedZone,
   });
 
   @override
@@ -381,6 +486,229 @@ class VolleyballCourtPainter extends CustomPainter {
         }
       }
     }
+
+    // Draw court zones if courtZones is provided
+    if (courtZones != null && teamPlayers != null) {
+      _drawCourtZones(canvas, size, courtOffsetX, courtOffsetY);
+    }
+  }
+
+  void _drawCourtZones(
+    Canvas canvas,
+    Size size,
+    double courtOffsetX,
+    double courtOffsetY,
+  ) {
+    // Zone dimensions
+    final zoneWidth = 120.0; // 240/2 per side
+    final zoneHeight = 80.0; // 240/3 rows
+
+    // Zone border paint - only for internal boundaries
+    final zoneBorderPaint = Paint()
+      ..color = const Color(0xFFFFD700)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    // Home side zones (left side of court) - 2 columns × 3 rows
+    for (int col = 0; col < 2; col++) {
+      for (int row = 0; row < 3; row++) {
+        final zoneNum = col * 3 + row + 1;
+        final zoneKey = 'home_$zoneNum';
+        final x = courtOffsetX + col * zoneWidth;
+        final y = courtOffsetY + row * zoneHeight;
+
+        // Draw selected zone background
+        if (selectedZone == zoneKey) {
+          canvas.drawRect(
+            Rect.fromLTWH(x, y, zoneWidth, zoneHeight),
+            Paint()
+              ..color = const Color(0xFFFFD700).withOpacity(0.2)
+              ..style = PaintingStyle.fill,
+          );
+        }
+
+        // Draw internal zone boundaries only (not the outer edges)
+        // Top boundary (if not first row)
+        if (row > 0) {
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(x + zoneWidth, y),
+            zoneBorderPaint,
+          );
+        }
+        // Left boundary (if not first column)
+        if (col > 0) {
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(x, y + zoneHeight),
+            zoneBorderPaint,
+          );
+        }
+
+        // Draw zone number or player jersey
+        if (courtZones![zoneKey] != null) {
+          final player = teamPlayers!.firstWhere(
+            (p) => p.id == courtZones![zoneKey],
+            orElse: () => teamPlayers!.first,
+          );
+          final jerseyNumber = player.jerseyNumber?.toString() ?? '?';
+
+          // Draw player circle
+          canvas.drawCircle(
+            Offset(x + zoneWidth / 2, y + zoneHeight / 2),
+            12,
+            Paint()
+              ..color = const Color(0xFFFFD700)
+              ..style = PaintingStyle.fill,
+          );
+
+          // Draw jersey number
+          final textSpan = TextSpan(
+            text: jerseyNumber,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          );
+          final textPainter = TextPainter(
+            text: textSpan,
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(
+            canvas,
+            Offset(
+              x + zoneWidth / 2 - textPainter.width / 2,
+              y + zoneHeight / 2 - textPainter.height / 2,
+            ),
+          );
+        } else {
+          // Draw zone number
+          final textSpan = TextSpan(
+            text: '$zoneNum',
+            style: const TextStyle(
+              color: Color(0xFFFFD700),
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+            ),
+          );
+          final textPainter = TextPainter(
+            text: textSpan,
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(
+            canvas,
+            Offset(
+              x + zoneWidth / 2 - textPainter.width / 2,
+              y + zoneHeight / 2 - textPainter.height / 2,
+            ),
+          );
+        }
+      }
+    }
+
+    // Away side zones (right side of court) - 2 columns × 3 rows
+    for (int col = 0; col < 2; col++) {
+      for (int row = 0; row < 3; row++) {
+        final zoneNum = col * 3 + row + 1;
+        final zoneKey = 'away_$zoneNum';
+        final x =
+            courtOffsetX + 240 + col * zoneWidth; // Start from center line
+        final y = courtOffsetY + row * zoneHeight;
+
+        // Draw selected zone background
+        if (selectedZone == zoneKey) {
+          canvas.drawRect(
+            Rect.fromLTWH(x, y, zoneWidth, zoneHeight),
+            Paint()
+              ..color = const Color(0xFFFFD700).withOpacity(0.2)
+              ..style = PaintingStyle.fill,
+          );
+        }
+
+        // Draw internal zone boundaries only (not the outer edges)
+        // Top boundary (if not first row)
+        if (row > 0) {
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(x + zoneWidth, y),
+            zoneBorderPaint,
+          );
+        }
+        // Left boundary (if not first column)
+        if (col > 0) {
+          canvas.drawLine(
+            Offset(x, y),
+            Offset(x, y + zoneHeight),
+            zoneBorderPaint,
+          );
+        }
+
+        // Draw zone number or player jersey
+        if (courtZones![zoneKey] != null) {
+          final player = teamPlayers!.firstWhere(
+            (p) => p.id == courtZones![zoneKey],
+            orElse: () => teamPlayers!.first,
+          );
+          final jerseyNumber = player.jerseyNumber?.toString() ?? '?';
+
+          // Draw player circle
+          canvas.drawCircle(
+            Offset(x + zoneWidth / 2, y + zoneHeight / 2),
+            12,
+            Paint()
+              ..color = const Color(0xFFFFD700)
+              ..style = PaintingStyle.fill,
+          );
+
+          // Draw jersey number
+          final textSpan = TextSpan(
+            text: jerseyNumber,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          );
+          final textPainter = TextPainter(
+            text: textSpan,
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(
+            canvas,
+            Offset(
+              x + zoneWidth / 2 - textPainter.width / 2,
+              y + zoneHeight / 2 - textPainter.height / 2,
+            ),
+          );
+        } else {
+          // Draw zone number
+          final textSpan = TextSpan(
+            text: '$zoneNum',
+            style: const TextStyle(
+              color: Color(0xFFFFD700),
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+            ),
+          );
+          final textPainter = TextPainter(
+            text: textSpan,
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(
+            canvas,
+            Offset(
+              x + zoneWidth / 2 - textPainter.width / 2,
+              y + zoneHeight / 2 - textPainter.height / 2,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -391,6 +719,8 @@ class VolleyballCourtPainter extends CustomPainter {
             oldDelegate.endX != endX ||
             oldDelegate.endY != endY ||
             oldDelegate.hasStartPoint != hasStartPoint ||
-            oldDelegate.isRecording != isRecording);
+            oldDelegate.isRecording != isRecording ||
+            oldDelegate.courtZones != courtZones ||
+            oldDelegate.selectedZone != selectedZone);
   }
 }

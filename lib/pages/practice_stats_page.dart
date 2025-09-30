@@ -94,6 +94,20 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   // Caching system
   Map<int, List<Event>> _playerEventsCache = {};
 
+  // Court zones - 6 zones per side (2 columns × 3 rows)
+  // Each side has zones 1-6 in a 2×3 grid
+  Map<String, int?> _courtZones = {
+    // Home side - 6 zones
+    'home_1': null, 'home_2': null, 'home_3': null,
+    'home_4': null, 'home_5': null, 'home_6': null,
+    // Away side - 6 zones
+    'away_1': null, 'away_2': null, 'away_3': null,
+    'away_4': null, 'away_5': null, 'away_6': null,
+  };
+
+  // Selected zone for player assignment
+  String? _selectedZone;
+
   // Court coordinate methods
 
   bool _cacheInitialized = false;
@@ -295,7 +309,13 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                                           ),
                                         ),
                                         child: InkWell(
-                                          onTap: () => _selectPlayer(player),
+                                          onTap: () {
+                                            if (_selectedZone != null) {
+                                              _onPlayerTap(player);
+                                            } else {
+                                              _selectPlayer(player);
+                                            }
+                                          },
                                           onLongPress: () =>
                                               _showRemovePlayerModal(player),
                                           borderRadius: BorderRadius.circular(
@@ -882,6 +902,10 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           hasStartPoint: _hasStartPoint,
           selectedAction: _recordingAction,
           isRecording: true, // Always allow coordinate recording
+          courtZones: _courtZones,
+          onZoneTap: _onZoneLongPress,
+          teamPlayers: _teamPlayers,
+          selectedZone: _selectedZone,
         ),
         const SizedBox(height: 16),
         // Team Stats Table
@@ -2237,6 +2261,59 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     return stats;
   }
 
+  void _onZoneLongPress(String zoneKey) {
+    // Select this zone for player assignment
+    setState(() {
+      _selectedZone = zoneKey;
+    });
+
+    // Show feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Zone ${zoneKey.split('_')[1]} selected. Tap a player to assign.',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _onPlayerTap(Player player) {
+    if (_selectedZone != null) {
+      final zoneNumber = _selectedZone!.split('_')[1];
+
+      setState(() {
+        // Remove player from any other zone first
+        for (String key in _courtZones.keys) {
+          if (_courtZones[key] == player.id) {
+            _courtZones[key] = null;
+          }
+        }
+        // Assign player to selected zone
+        _courtZones[_selectedZone!] = player.id;
+        // Clear selection
+        _selectedZone = null;
+      });
+
+      // Show feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${player.fullName} assigned to zone $zoneNumber'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  String _getPlayerZone(int playerId) {
+    for (String zoneKey in _courtZones.keys) {
+      if (_courtZones[zoneKey] == playerId) {
+        return zoneKey.split('_')[1];
+      }
+    }
+    return 'None';
+  }
+
   Widget _buildTeamStatsTable() {
     if (_teamPlayers.isEmpty) {
       return const Center(
@@ -2269,6 +2346,19 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       'Attacks': 70.0,
       'Kills': 50.0,
       'Hit %': 60.0,
+      // Blocking columns
+      'Blocks': 60.0,
+      'Solo': 50.0,
+      'Assist': 50.0,
+      'Error': 50.0,
+      // Dig columns
+      'Digs': 50.0,
+      'Overhand': 70.0,
+      'Platform': 70.0,
+      // Set columns
+      'Sets': 50.0,
+      'In System': 70.0,
+      'Out of System': 90.0,
     };
 
     return PlayerStatsTable(
