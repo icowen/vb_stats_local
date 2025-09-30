@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'database_helper.dart';
 import 'services/player_service.dart';
 import 'services/team_service.dart';
@@ -10,6 +11,9 @@ import 'models/match.dart';
 import 'models/practice.dart';
 import 'pages/practice_stats_page.dart';
 import 'utils/date_utils.dart';
+import 'providers/practice_stats_provider.dart';
+import 'providers/player_selection_provider.dart';
+import 'providers/event_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,56 +25,65 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData.dark().copyWith(
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFF00E5FF), // Neon light blue
-          secondary: const Color(0xFF00FF88), // Neon light green
-          surface: const Color(0xFF121212),
-          background: const Color(0xFF000000),
-          onPrimary: Colors.black,
-          onSecondary: Colors.black,
-          onSurface: Colors.white,
-          onBackground: Colors.white,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E),
-          foregroundColor: Colors.white,
-        ),
-        cardTheme: const CardThemeData(
-          color: Color(0xFF1E1E1E),
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PracticeStatsProvider()),
+        ChangeNotifierProvider(create: (_) => PlayerSelectionProvider()),
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData.dark().copyWith(
+          colorScheme: ColorScheme.dark(
+            primary: const Color(0xFF00E5FF), // Neon light blue
+            secondary: const Color(0xFF00FF88), // Neon light green
+            surface: const Color(0xFF121212),
+            background: const Color(0xFF000000),
+            onPrimary: Colors.black,
+            onSecondary: Colors.black,
+            onSurface: Colors.white,
+            onBackground: Colors.white,
           ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00E5FF),
-            foregroundColor: Colors.black,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1E1E1E),
+            foregroundColor: Colors.white,
+          ),
+          cardTheme: const CardThemeData(
+            color: Color(0xFF1E1E1E),
+            elevation: 8,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00E5FF),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF00E5FF),
+            ),
+          ),
+          inputDecorationTheme: const InputDecorationTheme(
+            border: OutlineInputBorder(),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF00E5FF), width: 2),
+            ),
+            labelStyle: TextStyle(color: Color(0xFF00E5FF)),
+          ),
+          dropdownMenuTheme: DropdownMenuThemeData(
+            menuStyle: MenuStyle(
+              backgroundColor: WidgetStateProperty.all(const Color(0xFF1E1E1E)),
             ),
           ),
         ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(foregroundColor: const Color(0xFF00E5FF)),
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xFF00E5FF), width: 2),
-          ),
-          labelStyle: TextStyle(color: Color(0xFF00E5FF)),
-        ),
-        dropdownMenuTheme: DropdownMenuThemeData(
-          menuStyle: MenuStyle(
-            backgroundColor: WidgetStateProperty.all(const Color(0xFF1E1E1E)),
-          ),
-        ),
+        home: const MyHomePage(title: 'Volleyball Stats'),
       ),
-      home: const MyHomePage(title: 'Volleyball Stats'),
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/practice.dart';
 import '../models/player.dart';
 import '../models/event.dart';
@@ -12,8 +11,6 @@ import 'practice_analysis_page.dart';
 import '../viz/player_stats_table.dart';
 import '../widgets/volleyball_court.dart';
 import '../utils/date_utils.dart';
-import '../providers/player_selection_provider.dart';
-import '../providers/event_provider.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -954,8 +951,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           endY: _displayEndY,
           hasStartPoint: _hasStartPoint,
           selectedAction: _recordingAction,
-          isRecording:
-              true, // Always allow court taps - _onCourtTap handles the logic
+          isRecording: true, // Always allow coordinate recording
           courtZones: _courtZones,
           onZoneTap: _onZoneTap,
           onZoneLongPress: _onZoneLongPress,
@@ -2317,16 +2313,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _onZoneTap(String zoneKey) {
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    final selectedPlayer = selectionProvider.selectedPlayer;
-    final selectedActionType = selectionProvider.selectedActionType;
-
-    // Only assign player to zone if player is selected but no action is selected
-    if (selectedPlayer != null && selectedActionType == null) {
-      // Player selected but no action - assign to this zone
-      _assignPlayerToZone(selectedPlayer, zoneKey);
+    if (_selectedPlayer != null) {
+      // Player selected - assign to this zone
+      _assignPlayerToZone(_selectedPlayer!, zoneKey);
     }
-    // If action is also selected, don't assign to zone - coordinate recording takes precedence
+    // No feedback when no player is selected - just silent
   }
 
   void _onZoneLongPress(String zoneKey) {
@@ -3365,14 +3356,20 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _selectServeType(String type) {
-    // Use provider for serve type selection
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    selectionProvider.selectActionType('serve');
-    selectionProvider.selectServeType(type);
-
-    // Keep local state for backward compatibility
     setState(() {
+      // Clear other action selections
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedServeResult = null;
+
+      // Set serve type
       _selectedServeType = type;
+      // Don't clear coordinates when changing action
     });
   }
 
@@ -3458,38 +3455,45 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _selectServeResult(String result) {
-    // Use provider for serve result selection
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    selectionProvider.selectActionType('serve');
-    selectionProvider.selectServeResult(result);
-
-    // Keep local state for backward compatibility
     setState(() {
+      // Clear other action selections
+      _selectedPassRating = null;
+      _selectedPassType = null;
+      _selectedAttackResult = null;
+      _selectedAttackMetadata.clear();
+      _selectedFreeballAction = null;
+      _selectedFreeballResult = null;
+
+      // Set serve result (but keep serve type if already selected)
       _selectedServeResult = result;
+      // Don't clear coordinates when changing action
     });
   }
 
   void _selectPassRating(String rating) {
-    // Use provider for pass rating selection
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    selectionProvider.selectActionType('pass');
-    selectionProvider.selectPassRating(rating);
-
-    // Keep local state for backward compatibility
     setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedAttackResult = null;
+
+      // Set pass rating
       _selectedPassRating = rating;
+      // Don't clear coordinates when changing action
     });
   }
 
   void _selectAttackResult(String result) {
-    // Use provider for attack result selection
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    selectionProvider.selectActionType('attack');
-    selectionProvider.selectAttackResult(result);
-
-    // Keep local state for backward compatibility
     setState(() {
+      // Clear other action selections
+      _selectedServeType = null;
+      _selectedServeResult = null;
+      _selectedPassRating = null;
+
+      // Set attack result
       _selectedAttackResult = result;
+      // Don't clear coordinates when changing action
+      // Keep attack metadata when switching results
     });
   }
 
@@ -3640,183 +3644,27 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _onCourtTap(double x, double y) {
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    final selectedPlayer = selectionProvider.selectedPlayer;
-    final selectedActionType = selectionProvider.selectedActionType;
+    // Allow coordinate recording anytime, regardless of player/action selection
 
-    // Check if both player and action are selected
-    if (selectedPlayer != null && selectedActionType != null) {
-      // Record coordinates for action
-      setState(() {
-        if (!_hasStartPoint) {
-          // First tap - set start point
-          _displayStartX = x;
-          _displayStartY = y;
-          _hasStartPoint = true;
-        } else {
-          // Second tap - set end point and save the event
-          _displayEndX = x;
-          _displayEndY = y;
-          _hasStartPoint = false; // Reset for next action
-
-          // Save the event with coordinates
-          _saveEventWithCoordinates();
-        }
-
-        // Store display coordinates directly (no flipping for display)
-        _startX = _displayStartX;
-        _startY = _displayStartY;
-        _endX = _displayEndX;
-        _endY = _displayEndY;
-      });
-    } else if (selectedPlayer != null && selectedActionType == null) {
-      // Only player selected - this should be handled by zone assignment logic
-      // The zone assignment logic is already in the volleyball court widget
-      return;
-    } else {
-      // No player selected - just record coordinates for display
-      setState(() {
-        if (!_hasStartPoint) {
-          // First tap - set start point
-          _displayStartX = x;
-          _displayStartY = y;
-          _hasStartPoint = true;
-        } else {
-          // Second tap - set end point
-          _displayEndX = x;
-          _displayEndY = y;
-          // Keep recording state true so points remain visible
-        }
-
-        // Store display coordinates directly (no flipping for display)
-        _startX = _displayStartX;
-        _startY = _displayStartY;
-        _endX = _displayEndX;
-        _endY = _displayEndY;
-      });
-    }
-  }
-
-  void _saveEventWithCoordinates() async {
-    final selectionProvider = context.read<PlayerSelectionProvider>();
-    final selectedPlayer = selectionProvider.selectedPlayer;
-    final selectedActionType = selectionProvider.selectedActionType;
-
-    if (selectedPlayer == null ||
-        selectedActionType == null ||
-        _startX == null ||
-        _startY == null ||
-        _endX == null ||
-        _endY == null) {
-      return;
-    }
-
-    try {
-      final eventProvider = context.read<EventProvider>();
-
-      // Create metadata map with coordinates
-      final metadata = <String, dynamic>{
-        'startX': _startX,
-        'startY': _startY,
-        'endX': _endX,
-        'endY': _endY,
-      };
-
-      // Add action-specific metadata
-      switch (selectedActionType) {
-        case 'serve':
-          if (selectionProvider.selectedServeResult != null) {
-            metadata['result'] = selectionProvider.selectedServeResult;
-          }
-          if (selectionProvider.selectedServeType != null) {
-            metadata['serveType'] = selectionProvider.selectedServeType;
-          }
-          break;
-        case 'pass':
-          if (selectionProvider.selectedPassRating != null) {
-            metadata['rating'] = selectionProvider.selectedPassRating;
-          }
-          if (selectionProvider.selectedPassType != null) {
-            metadata['passType'] = selectionProvider.selectedPassType;
-          }
-          break;
-        case 'attack':
-          if (selectionProvider.selectedAttackResult != null) {
-            metadata['result'] = selectionProvider.selectedAttackResult;
-          }
-          if (selectionProvider.selectedAttackMetadata.isNotEmpty) {
-            metadata.addAll(
-              Map.fromEntries(
-                selectionProvider.selectedAttackMetadata.map(
-                  (key) => MapEntry(key, true),
-                ),
-              ),
-            );
-          }
-          break;
-        case 'freeball':
-          if (selectionProvider.selectedFreeballAction != null) {
-            metadata['action'] = selectionProvider.selectedFreeballAction;
-          }
-          if (selectionProvider.selectedFreeballResult != null) {
-            metadata['result'] = selectionProvider.selectedFreeballResult;
-          }
-          break;
-        case 'block':
-          if (selectionProvider.selectedBlockingType != null) {
-            metadata['type'] = selectionProvider.selectedBlockingType;
-          }
-          break;
-        case 'dig':
-          if (selectionProvider.selectedDigType != null) {
-            metadata['type'] = selectionProvider.selectedDigType;
-          }
-          break;
-        case 'set':
-          if (selectionProvider.selectedSetType != null) {
-            metadata['type'] = selectionProvider.selectedSetType;
-          }
-          break;
+    setState(() {
+      if (!_hasStartPoint) {
+        // First tap - set start point
+        _displayStartX = x;
+        _displayStartY = y;
+        _hasStartPoint = true;
+      } else {
+        // Second tap - set end point
+        _displayEndX = x;
+        _displayEndY = y;
+        // Keep recording state true so points remain visible
       }
 
-      // Get team information
-      if (selectedPlayer.teamId == null) {
-        throw Exception(
-          'Player ${selectedPlayer.fullName} has no team assigned',
-        );
-      }
-      final team = await _teamService.getTeam(selectedPlayer.teamId!);
-      if (team == null) {
-        throw Exception('Team not found for player ${selectedPlayer.fullName}');
-      }
-
-      // Create and save the event
-      final event = Event(
-        practice: widget.practice,
-        player: selectedPlayer,
-        team: team,
-        type: EventType.values.firstWhere((e) => e.name == selectedActionType),
-        metadata: metadata,
-        timestamp: DateTime.now(),
-        fromX: _startX,
-        fromY: _startY,
-        toX: _endX,
-        toY: _endY,
-      );
-
-      await eventProvider.addEvent(event);
-
-      // Clear coordinates after successful save
-      _clearCoordinates();
-    } catch (e) {
-      print('Error saving event: $e');
-      // Show error to user
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving event: $e')));
-      }
-    }
+      // Store display coordinates directly (no flipping for display)
+      _startX = _displayStartX;
+      _startY = _displayStartY;
+      _endX = _displayEndX;
+      _endY = _displayEndY;
+    });
   }
 
   void _clearCoordinates() {

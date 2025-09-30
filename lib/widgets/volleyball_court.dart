@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/player.dart';
+import '../providers/player_selection_provider.dart';
 
 class VolleyballCourt extends StatefulWidget {
   final Function(double x, double y)? onCourtTap;
@@ -62,8 +64,21 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                 children: [
                   GestureDetector(
                     onTapDown: (details) {
-                      // Check if tap is on a zone first - if so, don't record coordinates
-                      if ((widget.onZoneTap != null ||
+                      // Check if tap is on a zone first, but only handle zone assignment
+                      // when we're specifically trying to assign a player to a zone
+                      // (i.e., when only a player is selected and no action is selected)
+                      final selectionProvider = context
+                          .read<PlayerSelectionProvider>();
+                      final selectedPlayer = selectionProvider.selectedPlayer;
+                      final selectedActionType =
+                          selectionProvider.selectedActionType;
+
+                      // Only handle zone assignment when only a player is selected (no action)
+                      final shouldHandleZoneAssignment =
+                          selectedPlayer != null && selectedActionType == null;
+
+                      if (shouldHandleZoneAssignment &&
+                          (widget.onZoneTap != null ||
                               widget.onZoneLongPress != null) &&
                           widget.courtZones != null) {
                         final localPosition = details.localPosition;
@@ -82,7 +97,11 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                                 localPosition.dx <= x + zoneWidth &&
                                 localPosition.dy >= y &&
                                 localPosition.dy <= y + zoneHeight) {
-                              return; // Don't record coordinates if on a zone
+                              final zoneKey = 'home_${col + row * 2 + 1}';
+                              if (widget.onZoneTap != null) {
+                                widget.onZoneTap!(zoneKey);
+                              }
+                              return; // Handle zone assignment - don't record coordinates
                             }
                           }
                         }
@@ -97,14 +116,19 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                                 localPosition.dx <= x + zoneWidth &&
                                 localPosition.dy >= y &&
                                 localPosition.dy <= y + zoneHeight) {
-                              return; // Don't record coordinates if on a zone
+                              final zoneKey = 'away_${col + row * 2 + 1}';
+                              if (widget.onZoneTap != null) {
+                                widget.onZoneTap!(zoneKey);
+                              }
+                              return; // Handle zone assignment - don't record coordinates
                             }
                           }
                         }
                       }
 
-                      // Handle court tap for coordinate recording (only if not on a zone)
-                      if (widget.onCourtTap != null && widget.isRecording) {
+                      // Handle court tap - always call onCourtTap if it exists
+                      // The onCourtTap method will decide what to do based on current state
+                      if (widget.onCourtTap != null) {
                         // Use the GestureDetector's local position directly
                         final localPosition = details.localPosition;
 
