@@ -15,6 +15,7 @@ import '../utils/date_utils.dart';
 import '../utils/app_colors.dart';
 import '../providers/player_selection_provider.dart';
 import '../providers/event_provider.dart';
+import '../providers/settings_provider.dart';
 
 enum UndoActionType { create, delete, update }
 
@@ -180,6 +181,11 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           '${widget.practice.team.teamName} Practice - ${DateFormatter.formatDate(widget.practice.date)}',
         ),
         actions: [
+          IconButton(
+            onPressed: () => _showSettingsModal(context),
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+          ),
           if (_undoStack.isNotEmpty)
             IconButton(
               onPressed: _undoLastAction,
@@ -481,6 +487,146 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => PracticeAnalysisPage(practice: widget.practice),
+      ),
+    );
+  }
+
+  void _showSettingsModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.courtBackground,
+          title: const Text('Settings', style: TextStyle(color: Colors.white)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Consumer<SettingsProvider>(
+              builder: (context, settings, child) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Stat Groups Visibility',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildStatGroupToggle(
+                      context,
+                      'Serve',
+                      settings.serveVisible,
+                      settings.toggleServeVisibility,
+                      AppColors.primary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Pass',
+                      settings.passVisible,
+                      settings.togglePassVisibility,
+                      AppColors.secondary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Attack',
+                      settings.attackVisible,
+                      settings.toggleAttackVisibility,
+                      AppColors.orangeWarning,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Block',
+                      settings.blockVisible,
+                      settings.toggleBlockVisibility,
+                      AppColors.redError,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Dig',
+                      settings.digVisible,
+                      settings.toggleDigVisibility,
+                      AppColors.primary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Set',
+                      settings.setVisible,
+                      settings.toggleSetVisibility,
+                      AppColors.secondary,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            await settings.resetToDefaults();
+                          },
+                          child: const Text(
+                            'Reset to Defaults',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Close',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatGroupToggle(
+    BuildContext context,
+    String title,
+    bool isVisible,
+    VoidCallback onToggle,
+    Color color,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.white),
+              ),
+            ],
+          ),
+          Switch(
+            value: isVisible,
+            onChanged: (_) => onToggle(),
+            activeColor: AppColors.primary,
+            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+            inactiveThumbColor: Colors.grey[600],
+            inactiveTrackColor: Colors.grey[800],
+          ),
+        ],
       ),
     );
   }
@@ -2369,656 +2515,566 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   Widget _buildAllActionsTile() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Column(
-          children: [
-            Column(
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Column(
               children: [
-                // First Row: Serve and Pass
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      // Serve Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.primary,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                // Serve Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'SERVE',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Serve Types
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Float',
-                                        AppColors.primary,
-                                        () => _selectServeType('float'),
-                                        _selectedServeType == 'float',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Hybrid',
-                                        AppColors.primary,
-                                        () => _selectServeType('hybrid'),
-                                        _selectedServeType == 'hybrid',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Spin',
-                                        AppColors.primary,
-                                        () => _selectServeType('spin'),
-                                        _selectedServeType == 'spin',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                // Serve Results
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Ace',
-                                        AppColors.secondary,
-                                        () => _selectServeResult('ace'),
-                                        _selectedServeResult == 'ace',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'In',
-                                        AppColors.secondary,
-                                        () => _selectServeResult('in'),
-                                        _selectedServeResult == 'in',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Error',
-                                        AppColors.redError,
-                                        () => _selectServeResult('error'),
-                                        _selectedServeResult == 'error',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                Column(children: _buildStatGroupRows(settings)),
+                const SizedBox(height: 8),
+                // Single Save Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _canSaveAction() ? _saveCurrentAction : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _getSaveButtonColor(),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: Text(
+                      _getSaveButtonText(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
-
-                      const SizedBox(width: 4),
-
-                      // Pass Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.secondary,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                // Pass Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'PASS',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: AppColors.secondary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Pass Ratings
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Ace',
-                                        AppColors.secondary,
-                                        () => _selectPassRating('ace'),
-                                        _selectedPassRating == 'ace',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 1),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        '3',
-                                        AppColors.secondary,
-                                        () => _selectPassRating('3'),
-                                        _selectedPassRating == '3',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 1),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        '2',
-                                        AppColors.primary,
-                                        () => _selectPassRating('2'),
-                                        _selectedPassRating == '2',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 1),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        '1',
-                                        AppColors.orangeWarning,
-                                        () => _selectPassRating('1'),
-                                        _selectedPassRating == '1',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 1),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        '0',
-                                        AppColors.redError,
-                                        () => _selectPassRating('0'),
-                                        _selectedPassRating == '0',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Pass Type
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _buildPassTypeButton(
-                                      'Overhand',
-                                      'overhand',
-                                      AppColors.secondary,
-                                    ),
-                                    _buildPassTypeButton(
-                                      'Platform',
-                                      'platform',
-                                      AppColors.secondary,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Second Row: Attack and Freeball
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      // Attack Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.orangeWarning,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                // Attack Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'ATTACK',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFFFF8800),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Attack Results
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Kill',
-                                        AppColors.secondary,
-                                        () => _selectAttackResult('kill'),
-                                        _selectedAttackResult == 'kill',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'In',
-                                        AppColors.primary,
-                                        () => _selectAttackResult('in'),
-                                        _selectedAttackResult == 'in',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Error',
-                                        AppColors.redError,
-                                        () => _selectAttackResult('error'),
-                                        _selectedAttackResult == 'error',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Attack Metadata
-                                Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _buildMetadataButton(
-                                          'Tip',
-                                          'tip',
-                                          const Color(0xFF9C27B0),
-                                        ),
-                                        _buildMetadataButton(
-                                          'Shot',
-                                          'shot',
-                                          const Color(0xFF2196F3),
-                                        ),
-                                        _buildMetadataButton(
-                                          'Blocked',
-                                          'blocked',
-                                          const Color(0xFFFF9800),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: [
-                                        _buildMetadataButton(
-                                          'Recycle',
-                                          'recycle',
-                                          const Color(0xFF4CAF50),
-                                        ),
-                                        _buildMetadataButton(
-                                          'Tool',
-                                          'tool',
-                                          const Color(0xFF607D8B),
-                                        ),
-                                        _buildMetadataButton(
-                                          'Deflected',
-                                          'deflected',
-                                          const Color(0xFFE91E63),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      // Freeball Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: const Color(0xFF9C27B0),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              children: [
-                                // Freeball Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'FREEBALL',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF9C27B0),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Freeball Actions
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Sent',
-                                        const Color(0xFF9C27B0),
-                                        () => _selectFreeballAction('sent'),
-                                        _selectedFreeballAction == 'sent',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Received',
-                                        const Color(0xFF9C27B0),
-                                        () => _selectFreeballAction('received'),
-                                        _selectedFreeballAction == 'received',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                // Freeball Result (only for received)
-                                if (_selectedFreeballAction == 'received')
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      _buildFreeballResultButton(
-                                        'Good',
-                                        'good',
-                                        AppColors.secondary,
-                                      ),
-                                      _buildFreeballResultButton(
-                                        'Bad',
-                                        'bad',
-                                        AppColors.redError,
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Third Row: Blocking, Dig, and Set
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      // Blocking Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: const Color(0xFFFF6B6B),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              children: [
-                                // Blocking Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'BLOCKING',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFFFF6B6B),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Blocking Types
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Solo',
-                                        const Color(0xFFFF6B6B),
-                                        () => _selectBlockingType('solo'),
-                                        _selectedBlockingType == 'solo',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Assist',
-                                        const Color(0xFFFF6B6B),
-                                        () => _selectBlockingType('assist'),
-                                        _selectedBlockingType == 'assist',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Error',
-                                        const Color(0xFFFF6B6B),
-                                        () => _selectBlockingType('error'),
-                                        _selectedBlockingType == 'error',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      // Dig Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: const Color(0xFF4CAF50),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              children: [
-                                // Dig Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'DIG',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF4CAF50),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Dig Types
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Overhand',
-                                        const Color(0xFF4CAF50),
-                                        () => _selectDigType('overhand'),
-                                        _selectedDigType == 'overhand',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Platform',
-                                        const Color(0xFF4CAF50),
-                                        () => _selectDigType('platform'),
-                                        _selectedDigType == 'platform',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      // Set Column
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: const Color(0xFF2196F3),
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Column(
-                              children: [
-                                // Set Title
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: const Text(
-                                    'SET',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF2196F3),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Set Types
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'In System',
-                                        const Color(0xFF2196F3),
-                                        () => _selectSetType('in_system'),
-                                        _selectedSetType == 'in_system',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Expanded(
-                                      child: _buildCompactButton(
-                                        'Out of System',
-                                        const Color(0xFF2196F3),
-                                        () => _selectSetType('out_of_system'),
-                                        _selectedSetType == 'out_of_system',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // Single Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _canSaveAction() ? _saveCurrentAction : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _getSaveButtonColor(),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: Text(
-                  _getSaveButtonText(),
-                  style: const TextStyle(
-                    fontSize: 14,
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildStatGroupRows(SettingsProvider settings) {
+    List<Widget> rows = [];
+    List<Widget> currentRow = [];
+
+    // Helper function to add a stat group to current row
+    void addStatGroup(Widget statGroup) {
+      currentRow.add(statGroup);
+      if (currentRow.length == 2) {
+        rows.add(IntrinsicHeight(child: Row(children: currentRow)));
+        rows.add(const SizedBox(height: 4));
+        currentRow = [];
+      }
+    }
+
+    // Add stat groups based on visibility settings
+    if (settings.serveVisible) {
+      addStatGroup(_buildServeColumn());
+    }
+    if (settings.passVisible) {
+      addStatGroup(_buildPassColumn());
+    }
+    if (settings.attackVisible) {
+      addStatGroup(_buildAttackColumn());
+    }
+    if (settings.blockVisible) {
+      addStatGroup(_buildBlockColumn());
+    }
+    if (settings.digVisible) {
+      addStatGroup(_buildDigColumn());
+    }
+    if (settings.setVisible) {
+      addStatGroup(_buildSetColumn());
+    }
+
+    // Add any remaining items in current row
+    if (currentRow.isNotEmpty) {
+      rows.add(IntrinsicHeight(child: Row(children: currentRow)));
+    }
+
+    return rows;
+  }
+
+  Widget _buildServeColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Serve Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'SERVE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              // Serve Types
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Float',
+                      AppColors.primary,
+                      () => _selectServeType('float'),
+                      _selectedServeType == 'float',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Hybrid',
+                      AppColors.primary,
+                      () => _selectServeType('hybrid'),
+                      _selectedServeType == 'hybrid',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Spin',
+                      AppColors.primary,
+                      () => _selectServeType('spin'),
+                      _selectedServeType == 'spin',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // Serve Results
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Ace',
+                      AppColors.secondary,
+                      () => _selectServeResult('ace'),
+                      _selectedServeResult == 'ace',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'In',
+                      AppColors.secondary,
+                      () => _selectServeResult('in'),
+                      _selectedServeResult == 'in',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Error',
+                      AppColors.redError,
+                      () => _selectServeResult('error'),
+                      _selectedServeResult == 'error',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPassColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.secondary, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Pass Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'PASS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Pass Ratings
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Ace',
+                      AppColors.secondary,
+                      () => _selectPassRating('ace'),
+                      _selectedPassRating == 'ace',
+                    ),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: _buildCompactButton(
+                      '3',
+                      AppColors.secondary,
+                      () => _selectPassRating('3'),
+                      _selectedPassRating == '3',
+                    ),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: _buildCompactButton(
+                      '2',
+                      AppColors.primary,
+                      () => _selectPassRating('2'),
+                      _selectedPassRating == '2',
+                    ),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: _buildCompactButton(
+                      '1',
+                      AppColors.orangeWarning,
+                      () => _selectPassRating('1'),
+                      _selectedPassRating == '1',
+                    ),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: _buildCompactButton(
+                      '0',
+                      AppColors.redError,
+                      () => _selectPassRating('0'),
+                      _selectedPassRating == '0',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Pass Type
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildPassTypeButton(
+                    'Overhand',
+                    'overhand',
+                    AppColors.secondary,
+                  ),
+                  _buildPassTypeButton(
+                    'Platform',
+                    'platform',
+                    AppColors.secondary,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttackColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.orangeWarning, width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Attack Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'ATTACK',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFFF8800),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Attack Results
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Kill',
+                      AppColors.secondary,
+                      () => _selectAttackResult('kill'),
+                      _selectedAttackResult == 'kill',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'In',
+                      AppColors.primary,
+                      () => _selectAttackResult('in'),
+                      _selectedAttackResult == 'in',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Error',
+                      AppColors.redError,
+                      () => _selectAttackResult('error'),
+                      _selectedAttackResult == 'error',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Attack Metadata
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildMetadataButton(
+                        'Tip',
+                        'tip',
+                        const Color(0xFF9C27B0),
+                      ),
+                      _buildMetadataButton(
+                        'Shot',
+                        'shot',
+                        const Color(0xFF2196F3),
+                      ),
+                      _buildMetadataButton(
+                        'Blocked',
+                        'blocked',
+                        const Color(0xFFFF9800),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildMetadataButton(
+                        'Recycle',
+                        'recycle',
+                        const Color(0xFF4CAF50),
+                      ),
+                      _buildMetadataButton(
+                        'Tool',
+                        'tool',
+                        const Color(0xFF607D8B),
+                      ),
+                      _buildMetadataButton(
+                        'Deflected',
+                        'deflected',
+                        const Color(0xFFE91E63),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBlockColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFFFF6B6B), width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            children: [
+              // Blocking Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'BLOCKING',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFFF6B6B),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Blocking Types
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Solo',
+                      const Color(0xFFFF6B6B),
+                      () => _selectBlockingType('solo'),
+                      _selectedBlockingType == 'solo',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Assist',
+                      const Color(0xFFFF6B6B),
+                      () => _selectBlockingType('assist'),
+                      _selectedBlockingType == 'assist',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Error',
+                      const Color(0xFFFF6B6B),
+                      () => _selectBlockingType('error'),
+                      _selectedBlockingType == 'error',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDigColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF4CAF50), width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            children: [
+              // Dig Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'DIG',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF4CAF50),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Dig Types
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Overhand',
+                      const Color(0xFF4CAF50),
+                      () => _selectDigType('overhand'),
+                      _selectedDigType == 'overhand',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Platform',
+                      const Color(0xFF4CAF50),
+                      () => _selectDigType('platform'),
+                      _selectedDigType == 'platform',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSetColumn() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF2196F3), width: 2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Column(
+            children: [
+              // Set Title
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: const Text(
+                  'SET',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF2196F3),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              // Set Types
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactButton(
+                      'In System',
+                      const Color(0xFF2196F3),
+                      () => _selectSetType('in_system'),
+                      _selectedSetType == 'in_system',
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: _buildCompactButton(
+                      'Out of System',
+                      const Color(0xFF2196F3),
+                      () => _selectSetType('out_of_system'),
+                      _selectedSetType == 'out_of_system',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3104,39 +3160,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
     return OutlinedButton(
       onPressed: isDisabled ? null : () => _selectPassType(value),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: isDisabled ? Colors.grey : buttonColor,
-        backgroundColor: isSelected
-            ? buttonColor.withValues(alpha: 0.3)
-            : Colors.transparent,
-        side: BorderSide(
-          color: isDisabled
-              ? Colors.grey
-              : (isSelected ? buttonColor : buttonColor.withValues(alpha: 0.5)),
-          width: isSelected ? 2 : 1,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        minimumSize: const Size(0, 20),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          fontSize: 12,
-          color: isDisabled ? Colors.grey : buttonColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFreeballResultButton(String label, String value, Color color) {
-    final bool isDisabled = _selectedPlayer == null;
-    final bool isSelected = _selectedFreeballResult == value;
-    final Color buttonColor = isDisabled ? Colors.grey : color;
-
-    return OutlinedButton(
-      onPressed: isDisabled ? null : () => _selectFreeballResult(value),
       style: OutlinedButton.styleFrom(
         foregroundColor: isDisabled ? Colors.grey : buttonColor,
         backgroundColor: isSelected
@@ -3438,35 +3461,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       } else {
         // Select the new type
         _selectedPassType = passType;
-      }
-    });
-  }
-
-  void _selectFreeballAction(String action) {
-    setState(() {
-      // Clear other action selections
-      _selectedServeType = null;
-      _selectedServeResult = null;
-      _selectedPassRating = null;
-      _selectedPassType = null;
-      _selectedAttackResult = null;
-      _selectedAttackMetadata.clear();
-
-      // Set freeball action
-      _selectedFreeballAction = action;
-      // Clear result when switching actions
-      _selectedFreeballResult = null;
-    });
-  }
-
-  void _selectFreeballResult(String result) {
-    setState(() {
-      if (_selectedFreeballResult == result) {
-        // If the same result is selected, deselect it
-        _selectedFreeballResult = null;
-      } else {
-        // Select the new result
-        _selectedFreeballResult = result;
       }
     });
   }

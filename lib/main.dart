@@ -15,6 +15,7 @@ import 'utils/app_colors.dart';
 import 'providers/practice_stats_provider.dart';
 import 'providers/player_selection_provider.dart';
 import 'providers/event_provider.dart';
+import 'providers/settings_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PracticeStatsProvider()),
         ChangeNotifierProvider(create: (_) => PlayerSelectionProvider()),
         ChangeNotifierProvider(create: (_) => EventProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',
@@ -112,6 +114,12 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _initializeDatabase();
+    _initializeSettings();
+  }
+
+  Future<void> _initializeSettings() async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    await settings.initialize();
   }
 
   Future<void> _initializeDatabase() async {
@@ -170,6 +178,11 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
         actions: [
+          IconButton(
+            onPressed: () => _showSettingsModal(context),
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+          ),
           IconButton(
             onPressed: () => _showResetDatabaseDialog(context),
             icon: const Icon(Icons.refresh),
@@ -1097,6 +1110,146 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         );
       },
+    );
+  }
+
+  void _showSettingsModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppColors.courtBackground,
+          title: const Text('Settings', style: TextStyle(color: Colors.white)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Consumer<SettingsProvider>(
+              builder: (context, settings, child) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Stat Groups Visibility',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildStatGroupToggle(
+                      context,
+                      'Serve',
+                      settings.serveVisible,
+                      settings.toggleServeVisibility,
+                      AppColors.primary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Pass',
+                      settings.passVisible,
+                      settings.togglePassVisibility,
+                      AppColors.secondary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Attack',
+                      settings.attackVisible,
+                      settings.toggleAttackVisibility,
+                      AppColors.orangeWarning,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Block',
+                      settings.blockVisible,
+                      settings.toggleBlockVisibility,
+                      AppColors.redError,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Dig',
+                      settings.digVisible,
+                      settings.toggleDigVisibility,
+                      AppColors.primary,
+                    ),
+                    _buildStatGroupToggle(
+                      context,
+                      'Set',
+                      settings.setVisible,
+                      settings.toggleSetVisibility,
+                      AppColors.secondary,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            await settings.resetToDefaults();
+                          },
+                          child: const Text(
+                            'Reset to Defaults',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text(
+                            'Close',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatGroupToggle(
+    BuildContext context,
+    String title,
+    bool isVisible,
+    VoidCallback onToggle,
+    Color color,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.white),
+              ),
+            ],
+          ),
+          Switch(
+            value: isVisible,
+            onChanged: (_) => onToggle(),
+            activeColor: AppColors.primary,
+            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+            inactiveThumbColor: Colors.grey[600],
+            inactiveTrackColor: Colors.grey[800],
+          ),
+        ],
+      ),
     );
   }
 

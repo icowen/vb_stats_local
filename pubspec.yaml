@@ -43,6 +43,7 @@ dependencies:
   aws_client: ^0.7.1
   mailer: ^6.1.4
   provider: ^6.1.2
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
