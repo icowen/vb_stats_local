@@ -128,7 +128,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       await _dbHelper.ensureTablesExist();
       await _loadTeamPlayers();
     } catch (e) {
-      print('Error initializing database: $e');
       setState(() {
         _teamPlayers = [];
         _allPlayers = [];
@@ -148,13 +147,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         widget.practice.id!,
       );
 
-      print(
-        'Practice ${widget.practice.id} has ${practicePlayers.length} players',
-      );
-      for (final player in practicePlayers) {
-        print('  - ${player.fullName} (ID: ${player.id})');
-      }
-
       setState(() {
         _teamPlayers = _sortPlayers(practicePlayers);
         _allPlayers = allPlayers;
@@ -165,7 +157,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       // Initialize cache for all team players
       await _initializePlayerCache();
     } catch (e) {
-      print('Error loading practice players: $e');
       setState(() {
         _isLoading = false;
       });
@@ -692,9 +683,8 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         }
       }
       _cacheInitialized = true;
-      print('Player cache initialized for ${_teamPlayers.length} players');
     } catch (e) {
-      print('Error initializing player cache: $e');
+      // Error initializing player cache
     }
   }
 
@@ -712,7 +702,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         _playerEventsCache[_selectedPlayer!.id!] = events;
       }
     } catch (e) {
-      print('Error loading player events: $e');
       _playerEvents = [];
     }
   }
@@ -722,7 +711,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
       final events = await _eventService.getEventsForPlayer(playerId);
       _playerEventsCache[playerId] = events;
     } catch (e) {
-      print('Error updating player cache for player $playerId: $e');
+      // Error updating player cache
     }
   }
 
@@ -778,7 +767,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                               );
                             }
                           } catch (e) {
-                            print('Error adding player to practice: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -914,10 +902,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                               )
                               .toList();
 
-                          print(
-                            'Found ${teamPlayers.length} players in team ${team.teamName}, ${newPlayers.length} new players to add to practice ${widget.practice.id}',
-                          );
-
                           if (newPlayers.isEmpty) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -933,9 +917,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
 
                           // Add each new player to the practice
                           for (final player in newPlayers) {
-                            print(
-                              'Adding player ${player.fullName} to practice',
-                            );
                             await _playerService.addPlayerToPractice(
                               widget.practice.id!,
                               player.id!,
@@ -955,10 +936,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             }
                           }
 
-                          print(
-                            'Successfully added ${newPlayers.length} players to practice',
-                          );
-
                           Navigator.of(context).pop();
 
                           if (mounted) {
@@ -972,7 +949,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
                             );
                           }
                         } catch (e) {
-                          print('Error adding team to practice: $e');
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -1031,7 +1007,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      print('Error removing player from practice: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2030,7 +2005,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      print('Error updating event: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2132,7 +2106,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      print('Error undoing action: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2215,7 +2188,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      print('Error redoing action: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2263,7 +2235,6 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
     } catch (e) {
-      print('Error deleting event: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3568,13 +3539,9 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _onCourtTap(double x, double y) {
-    print('🎯 _onCourtTap called with coordinates: ($x, $y)');
     final selectionProvider = context.read<PlayerSelectionProvider>();
     final selectedPlayer = selectionProvider.selectedPlayer;
     final selectedActionType = selectionProvider.selectedActionType;
-    print(
-      '🎯 Selected player: ${selectedPlayer?.fullName}, Action: $selectedActionType',
-    );
 
     // Check if both player and action are selected
     if (selectedPlayer != null && selectedActionType != null) {
@@ -3585,7 +3552,7 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
           _displayStartX = x;
           _displayStartY = y;
           _hasStartPoint = true;
-        } else if (_endX == null || _endY == null) {
+        } else if (_displayEndX == null || _displayEndY == null) {
           // Second tap - set end point and save the event
           _displayEndX = x;
           _displayEndY = y;
@@ -3634,101 +3601,47 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
   }
 
   void _onCourtLongPress(double x, double y) {
-    print('🎯🎯 _onCourtLongPress called with coordinates: ($x, $y)');
-    print(
-      '🎯🎯 Current state - hasStartPoint: $_hasStartPoint, start=($_startX, $_startY), end=($_endX, $_endY)',
-    );
     final selectionProvider = context.read<PlayerSelectionProvider>();
     final selectedPlayer = selectionProvider.selectedPlayer;
     final selectedActionType = selectionProvider.selectedActionType;
-    print(
-      '🎯🎯 Selected player: ${selectedPlayer?.fullName}, Action: $selectedActionType',
-    );
 
-    // Only handle long press if we have both player and action selected
-    if (selectedPlayer != null && selectedActionType != null) {
-      print('🎯🎯 Processing long press - hasStartPoint: $_hasStartPoint');
-      bool shouldSaveAfterUpdate = false;
-      setState(() {
-        if (!_hasStartPoint) {
-          // No start point yet, treat as first tap
-          print('🎯🎯 BRANCH 1: Setting start point');
-          _displayStartX = x;
-          _displayStartY = y;
-          _hasStartPoint = true;
-        } else if (_endX == null || _endY == null) {
-          // We have a start point but no end point, so double tap should save the action
-          print('🎯🎯 BRANCH 2: Setting end point and saving action');
-          print('🎯🎯 BRANCH 2: _endX=$_endX, _endY=$_endY');
-          print(
-            '🎯🎯 BRANCH 2: Start coords=($_startX, $_startY), New end coords=($x, $y)',
-          );
-          // Use tolerance-based comparison for floating point coordinates
-          const double tolerance = 0.01; // 1% tolerance
-          final startXDiff = (_startX ?? 0) - x;
-          final startYDiff = (_startY ?? 0) - y;
-          final isSameLocation =
-              startXDiff.abs() < tolerance && startYDiff.abs() < tolerance;
+    // Always draw coordinates for visual feedback
+    bool shouldSaveAfterUpdate = false;
+    setState(() {
+      if (!_hasStartPoint) {
+        // No start point yet, treat as first tap
+        _displayStartX = x;
+        _displayStartY = y;
+        _hasStartPoint = true;
+      } else if (_displayEndX == null || _displayEndY == null) {
+        // We have a start point but no end point, so long press should set end point
+        _displayEndX = x;
+        _displayEndY = y;
+        // Don't reset _hasStartPoint here - keep both points visible until saved
 
-          if (isSameLocation) {
-            print(
-              '🎯🎯 WARNING: Start and end coordinates are the same - you tapped and double-tapped at the same location',
-            );
-            print(
-              '🎯🎯 Coordinate diff: startX=${startXDiff.toStringAsFixed(6)}, startY=${startYDiff.toStringAsFixed(6)}',
-            );
-          } else {
-            print(
-              '🎯🎯 SUCCESS: Start and end coordinates are different - double-tap at different location',
-            );
-            print(
-              '🎯🎯 Coordinate diff: startX=${startXDiff.toStringAsFixed(6)}, startY=${startYDiff.toStringAsFixed(6)}',
-            );
-          }
-          _displayEndX = x;
-          _displayEndY = y;
-          // Don't reset _hasStartPoint here - keep both points visible until saved
-
-          // Will save after setState completes
-          shouldSaveAfterUpdate = true;
-        } else {
-          // We already have both points - update the end point and save
-          print('🎯🎯 BRANCH 3: Updating end point and saving action');
-          print('🎯🎯 BRANCH 3: _endX=$_endX, _endY=$_endY');
-          print(
-            '🎯🎯 Before update - start=($_displayStartX, $_displayStartY), end=($_displayEndX, $_displayEndY)',
-          );
-          _displayEndX = x;
-          _displayEndY = y;
-          print(
-            '🎯🎯 After update - start=($_displayStartX, $_displayStartY), end=($_displayEndX, $_displayEndY)',
-          );
-
-          // Will save after setState completes
-          shouldSaveAfterUpdate = true;
-        }
-
-        // Store display coordinates directly (no flipping for display)
-        _startX = _displayStartX;
-        _startY = _displayStartY;
-        _endX = _displayEndX;
-        _endY = _displayEndY;
-        print(
-          '🎯🎯 Final stored coordinates - start=($_startX, $_startY), end=($_endX, $_endY)',
-        );
-      });
-
-      // Save the event after setState completes if we updated the end point
-      if (shouldSaveAfterUpdate) {
-        print('🎯🎯 Calling _saveEventWithCoordinates after setState');
-        _saveEventWithCoordinates();
+        // Will save after setState completes if player and action are selected
+        shouldSaveAfterUpdate =
+            (selectedPlayer != null && selectedActionType != null);
       } else {
-        print(
-          '🎯🎯 Not calling _saveEventWithCoordinates - shouldSaveAfterUpdate: $shouldSaveAfterUpdate',
-        );
+        // We already have both points - update the end point
+        _displayEndX = x;
+        _displayEndY = y;
+
+        // Will save after setState completes if player and action are selected
+        shouldSaveAfterUpdate =
+            (selectedPlayer != null && selectedActionType != null);
       }
-    } else {
-      print('🎯🎯 Double tap ignored - missing player or action');
+
+      // Store display coordinates directly (no flipping for display)
+      _startX = _displayStartX;
+      _startY = _displayStartY;
+      _endX = _displayEndX;
+      _endY = _displayEndY;
+    });
+
+    // Save the event after setState completes if we have both player and action selected
+    if (shouldSaveAfterUpdate) {
+      _saveEventWithCoordinates();
     }
   }
 
@@ -3737,17 +3650,12 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
     final selectedPlayer = selectionProvider.selectedPlayer;
     final selectedActionType = selectionProvider.selectedActionType;
 
-    print(
-      '💾 _saveEventWithCoordinates called with coordinates: start=($_startX, $_startY), end=($_endX, $_endY)',
-    );
-
     if (selectedPlayer == null ||
         selectedActionType == null ||
         _startX == null ||
         _startY == null ||
         _endX == null ||
         _endY == null) {
-      print('💾 _saveEventWithCoordinates aborted - missing data');
       return;
     }
 
@@ -3867,10 +3775,19 @@ class _PracticeCollectionPageState extends State<PracticeCollectionPage> {
         );
       }
 
-      // Clear coordinates after successful save
+      // Clear coordinates and selections after successful save
       _clearCoordinates();
+
+      // Clear player and action selections (same as other save methods)
+      setState(() {
+        _selectedPlayer = null;
+        _recordingAction = null;
+      });
+
+      // Also clear the provider selections
+      selectionProvider.clearPlayerSelection();
+      selectionProvider.clearAllActionSelections();
     } catch (e) {
-      print('Error saving event: $e');
       // Show error to user
       if (mounted) {
         ScaffoldMessenger.of(

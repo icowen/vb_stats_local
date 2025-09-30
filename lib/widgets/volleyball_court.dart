@@ -88,6 +88,9 @@ class _VolleyballCourtState extends State<VolleyballCourt> {
                         (localPosition.dy - courtOffsetY) /
                         240.0; // 0-1 normalized
 
+                    // Store the last tap position for consistency
+                    _lastTapPosition = Offset(x, y);
+
                     if (widget.onCourtDoubleTap != null) {
                       widget.onCourtDoubleTap!(x, y);
                     }
